@@ -73,6 +73,9 @@ public:
 	matrix2D<T> & getSubMatrix(int startRow, int endRow, int startCol, int endCol);
 	void copyValues(matrix2D<T> & from, int startRow, int endRow);
 	void copyValues(matrix2D<T> & from, int startRow, int endRow, int startCol, int endCol);
+	void fillRandomly(const int min = 0, const int max = 5);
+	void fillRandomlyLowerTriangular(const int min = 0, const int max = 5);
+	void makePositiveDefinite();
 	friend std::ostream& operator<< <>(std::ostream& stream, const matrix2D<T>& matrix);
 	friend matrix2D<T> transpose <>(matrix2D<T>& matrix);
 	friend bool isValidToMultiply <>(matrix2D<T> & m1, matrix2D<T> & m2);
@@ -83,7 +86,7 @@ private:
 	std::vector<T> data;
 	int columnCount;
 	int rowCount;
-	
+	void resize(const unsigned int newRowCount, const unsigned int newColumnCount);
 };
 template <class T>
 matrix2D<T>::matrix2D() : data(), rowCount(0), columnCount(0)
@@ -215,7 +218,8 @@ matrix2D<T> & matrix2D<T>::getSubMatrix(int startRow, int endRow, int startCol, 
 		col = 0;
 		row++;
 	}
-	this->data.resize(newRowCount * newColumnCount);
+
+	this->resize(newRowCount, newColumnCount);
 	return *this;
 }
 
@@ -288,6 +292,57 @@ void matrix2D<T>::copyValues(matrix2D<T> & from, int startRow, int endRow, int s
 			break;
 		}
 	}
+}
+
+template <class T>
+void matrix2D<T>::fillRandomly(const int min, const int max)
+{
+	for (int i = 0; i < rowCount; i++)
+	{
+		for (int j = 0; j < columnCount; j++)
+		{
+			T randNum = (T)(min + (rand() % static_cast<int>(max - min + 1)));
+			randNum = (randNum == 0.0) ? 1.0 : randNum;
+			(*this)(i, j) = randNum;
+		}
+	}
+}
+
+template <class T>
+void matrix2D<T>::fillRandomlyLowerTriangular(const int min, const int max)
+{
+	for (int i = 0; i < rowCount; i++)
+	{
+		for (int j = 0; j < columnCount; j++)
+		{
+			if (i >= j)
+			{
+				T randNum = (T)(min + (rand() % static_cast<int>(max - min + 1)));
+				randNum = (randNum == 0.0) ? 1.0 : randNum;
+				(*this)(i, j) = randNum;
+			}
+			else
+			{
+				(*this)(i, j) = 0.0;
+			}
+		}
+	}
+}
+
+template <class T>
+void  matrix2D<T>::makePositiveDefinite()
+{
+	this->fillRandomlyLowerTriangular();
+	matrix2D<T> transposed = transpose(*this);
+	(*this) = multiply((*this), transposed);
+}
+
+template <class T>
+void matrix2D<T>::resize(const unsigned int newRowCount, const unsigned int newColumnCount)
+{
+	rowCount = newRowCount;
+	columnCount = newColumnCount;
+	this->data.resize(rowCount * columnCount);
 }
 
 template <class T>

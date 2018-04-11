@@ -14,18 +14,20 @@ int main(int argc, char **argv)
 	const int MIN = 0;
 	int rank, size;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	// Get the rank of the process
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	matrix2D<double> matrixL;
 	matrix2D<double> matrixL2;
 	if (rank == 0)
 	{
-		matrixL = matrix2D<double>(N, N, 1.0);
+		matrixL = matrix2D<double>(N, N);
+		//matrixL.makePositiveDefinite();
+		matrixL.fillRandomlyLowerTriangular(0, 3);
 		matrixL2 = matrix2D<double>(N, N, 1.0);
 		std::cout << "matrixL: \n" << matrixL << std::endl;
 		std::cout << "matrixL2: \n" << matrixL2 << std::endl;
-		/*
+		
 		std::cout << "submatrixL2: \n" << matrixL2.createSubMatrix(0, 3, 0, 2) << std::endl;
+		/*
 		matrix2D<double> product = multiply(matrixL, matrixL2);
 		std::cout << "multiply done: " << std::endl;
 		std::cout << "product: \n" << product << std::endl;
