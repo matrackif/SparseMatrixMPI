@@ -2,7 +2,7 @@
 #include "matrix.hpp"
 #include "mpi.h"
 
-
+// TODO use block striped decomposition algo http://www.hpcc.unn.ru/mskurs/ENG/PPT/pp08.pdf
 template <class T>
 void parallelMult(int rank, int size, matrix2D<T> & m1, matrix2D<T> & m2)
 {
@@ -145,7 +145,7 @@ void parallelAdd(int rank, int size, matrix2D<T> & m1, matrix2D<T> & m2)
 		}
 		std::cout << "parallelAdd() Finished! m1: \n" << m1 << "m2: \n" << m2 << " m1 + m2: \n" << result << std::endl;
 	}
-	else
+	else 
 	{
 		std::cout << "parallelAdd() Rank=" << rank << " numRowsPerProcess: " << numRowsPerProcess << std::endl;
 		result = matrix2D<T>(numRowsPerProcess, m1ColCount);
