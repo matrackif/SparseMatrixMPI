@@ -3,6 +3,10 @@
 #include <vector>
 #include <stdlib.h> 
 #include <cmath>
+#include <fstream>
+#include <sstream>
+#include <sstream>
+
 /*
 template <class T>
 class matrix2D
@@ -60,8 +64,8 @@ public:
 	matrix2D();
 	matrix2D(int rowCount, int colCount);
 	matrix2D(int rowCount, int colCount, T fill);
+	matrix2D(const std::string & mtxFile);
 	void print() const;
-	// int getColumnCount(return columnCount;)
 	void print(std::ostream & os) const;
 	T &operator()(int x, int y);
 	T* getData(int rowIdx);
@@ -104,6 +108,42 @@ template <class T>
 matrix2D<T>::matrix2D(int x, int y, T fill) : data(x*y, fill), rowCount(x), columnCount(y)
 {
 
+}
+
+template <class T>
+matrix2D<T>::matrix2D(const std::string & mtxFile)
+{
+	std::ifstream file(mtxFile);
+	std::string line;
+	bool isHeaderLine = true;
+	while (std::getline(file, line))
+	{
+		if (line.empty() || line[0] == '%')
+		{
+			continue;
+		}
+		std::istringstream iss(line);
+		if (isHeaderLine)
+		{
+			int nNonZeros;
+			iss >> this->rowCount;
+			iss >> this->columnCount;
+			iss >> nNonZeros;
+			this->resize(rowCount, columnCount);
+			isHeaderLine = false;
+		}
+		else
+		{
+			int row, col;
+			T val;
+			iss >> row;
+			iss >> col;
+			iss >> val;
+			row--;
+			col--;
+			(*this)(row, col) = val;
+		}
+	}
 }
 
 template <class T>

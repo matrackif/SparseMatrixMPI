@@ -3,6 +3,8 @@
 #include <vector>
 #include <stdlib.h> 
 #include <cmath>
+#include <map>
+
 template <class T> class SparseMatrix;
 
 template <class T>
@@ -33,7 +35,8 @@ public:
 	//void print() const;
 	// int getColumnCount(return columnCount;)
 	void print(std::ostream & os) const;
-	T &operator()(int x, int y);
+	void insertValue(int row, int col, T val);
+	// T &operator()(int x, int y);
 	// T* getData(int rowIdx);
 	// std::vector<T> getVector();
 	int getRowCount();
@@ -47,6 +50,8 @@ public:
 	void fillRandomly(const int min = 0, const int max = 5);
 	//void fillRandomlyLowerTriangular(const int min = 0, const int max = 5);
 	//void makePositiveDefinite();
+	std::vector<T> toVector();
+	void fromVector(std::vector<T> & v);
 	friend std::ostream& operator<< <>(std::ostream& stream, const SparseMatrix<T>& matrix);
 	friend SparseMatrix<T> transpose <>(SparseMatrix<T>& matrix);
 	friend bool isValidToMultiply <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
@@ -58,16 +63,22 @@ private:
 	int columnCount;
 	int rowCount;
 	int nonZeroCount;
+	typedef std::multimap<int, std::pair<int, T>> MatrixMap;
+	typedef std::pair<int, std::pair<int, T>> MatrixEntry;
+	typedef typename MatrixMap::iterator MatrixIter;
+	typedef typename MatrixMap::const_iterator MatrixConstIter;
+	typedef std::pair<typename MatrixIter, typename MatrixIter> Range;
+	typename MatrixMap data;
 	//void resize(const unsigned int newRowCount, const unsigned int newColumnCount);
 };
 template <class T>
-SparseMatrix<T>::SparseMatrix() : rowCount(0), columnCount(0), nonZeroCount(0)
+SparseMatrix<T>::SparseMatrix() : rowCount(0), columnCount(0), nonZeroCount(0), data()
 {
-
+	
 }
 
 template <class T>
-SparseMatrix<T>::SparseMatrix(int x, int y, int nZeroCount) : rowCount(x), columnCount(y), nonZeroCount(nZeroCount)
+SparseMatrix<T>::SparseMatrix(int x, int y, int nZeroCount) : rowCount(x), columnCount(y), nonZeroCount(nZeroCount), data()
 {
 
 }
@@ -95,6 +106,7 @@ void SparseMatrix<T>::print() const
 template <class T>
 void SparseMatrix<T>::print(std::ostream & os) const
 {
+	/*
 	for (int i = 0; i < rowCount; i++)
 	{
 		for (int j = 0; j < columnCount; j++)
@@ -103,13 +115,46 @@ void SparseMatrix<T>::print(std::ostream & os) const
 		}
 		os << std::endl;
 	}
+	*/
+	for (MatrixConstIter it = data.begin(); it != data.end(); it++)
+	{
+		os << "Row: " << it->first << " Column: " << it->second.first 
+			<< " Value: " << it->second.second << std::endl;
+	}
 }
 
 template <class T>
+void SparseMatrix<T>::insertValue(int row, int col, T val)
+{
+	if (val == 0)
+	{
+		return;
+	}	
+	Range r = data.equal_range(row);
+	for (MatrixIter lowIt = r.first; lowIt != r.second; lowIt++)
+	{
+		if (lowIt->second.first == col)
+		{
+			lowIt->second.second = val;
+			return;
+		}
+	}
+	// column not found, insert it
+	data.insert(MatrixEntry(row, std::make_pair(col, val)));
+	nonZeroCount++;
+}
+/*
+template <class T>
 T& SparseMatrix<T>::operator()(int x, int y)
 {
+	Range rowX = data.equal_range(x);
+	for (MatrixIter it = rowX.begin(); it != rowX.end(); it++)
+	{
+		MatrixEntry entry = *it;
+	}
 	return (T)1;
 }
+*/
 /*
 template <class T>
 T* SparseMatrix<T>::getData(int rowIdx)
@@ -291,7 +336,17 @@ void SparseMatrix<T>::fillRandomly(const int min, const int max)
 		}
 	}
 }
+template <class T>
+std::vector<T> SparseMatrix<T>::toVector()
+{
+	return std::vector<T>();
+}
 
+template <class T>
+void SparseMatrix<T>::fromVector(std::vector<T> & v)
+{
+	std::cout << "lol" << std::endl;
+}
 /*
 template <class T>
 void SparseMatrix<T>::fillRandomlyLowerTriangular(const int min, const int max)
