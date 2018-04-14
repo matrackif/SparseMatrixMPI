@@ -19,23 +19,25 @@ bool isValidToMultiply(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 template <class T>
 bool isValidToAdd(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 
-template <class T>
-SparseMatrix<T> multiply(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
+//template <class T>
+//SparseMatrix<T> multiply(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 
-template <class T>
-SparseMatrix<T> add(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
+//template <class T>
+//SparseMatrix<T> add(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 
 template <class T>
 class SparseMatrix
 {
 public:
 	SparseMatrix();
-	SparseMatrix(int rowCount, int colCount, int nZeroCount);
+	SparseMatrix(int rowCount, int colCount, int nZeroCount=0);
+	SparseMatrix(const std::string & mtxFile);
 	//SparseMatrix(int rowCount, int colCount, T fill);
 	//void print() const;
 	// int getColumnCount(return columnCount;)
 	void print(std::ostream & os) const;
 	void insertValue(int row, int col, T val);
+	void addToValue(int row, int col, T val);
 	// T &operator()(int x, int y);
 	// T* getData(int rowIdx);
 	// std::vector<T> getVector();
@@ -43,6 +45,8 @@ public:
 	int getColumnCount();
 	int getNumElements();
 	int getNumNonZeroElements();
+	bool getVal(int row, int col, T & val);
+	T & operator()(int row, int col);
 	//SparseMatrix<T> createSubMatrix(int startRow, int endRow, int startCol, int endCol);
 	//SparseMatrix<T> & getSubMatrix(int startRow, int endRow, int startCol, int endCol);
 	//void copyValues(SparseMatrix<T> & from, int startRow, int endRow);
@@ -52,12 +56,14 @@ public:
 	//void makePositiveDefinite();
 	std::vector<T> toVector();
 	void fromVector(std::vector<T> & v);
+	SparseMatrix<T> multiply(SparseMatrix<T> & m1);
+	SparseMatrix<T> add(SparseMatrix<T> & m1);
 	friend std::ostream& operator<< <>(std::ostream& stream, const SparseMatrix<T>& matrix);
 	friend SparseMatrix<T> transpose <>(SparseMatrix<T>& matrix);
 	friend bool isValidToMultiply <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 	friend bool isValidToAdd <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
-	friend SparseMatrix<T> multiply <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
-	friend SparseMatrix<T> add <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
+	//friend SparseMatrix<T> multiply <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
+	//friend SparseMatrix<T> add <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 private:
 	//std::vector<T> data;
 	int columnCount;
@@ -81,6 +87,57 @@ template <class T>
 SparseMatrix<T>::SparseMatrix(int x, int y, int nZeroCount) : rowCount(x), columnCount(y), nonZeroCount(nZeroCount), data()
 {
 
+}
+
+template <class T>
+SparseMatrix<T>::SparseMatrix(const std::string & mtxFile)
+{
+	std::ifstream file(mtxFile);
+	std::string line;
+	bool isHeaderLine = true;
+	while (std::getline(file, line))
+	{
+		if (line.empty() || line[0] == '%')
+		{
+			continue;
+		}
+		std::istringstream iss(line);
+		if (isHeaderLine)
+		{
+			iss >> this->rowCount;
+			iss >> this->columnCount;
+			//iss >> this->nonZeroCount;
+			//this->resize(rowCount, columnCount);
+			isHeaderLine = false;
+		}
+		else
+		{
+			int row, col;
+			T val;
+			iss >> row;
+			iss >> col;
+			iss >> val;
+			row--;
+			col--;
+			this->insertValue(row, col, val);
+		}
+	}
+	/*
+	if (file.bad())
+	{
+		std::cout << "IO error" << std::endl;// IO error
+	}
+	else if (!file.eof())
+	{
+		std::cout << "format error" << std::endl;// format error (not possible with getline but possible with operator>>)
+	}
+	else 
+	{
+		std::cout << "format or EOF" << std::endl;
+		// format error (not possible with getline but possible with operator>>)
+		// or end of file (can't make the difference)
+	}
+	*/
 }
 /*
 template <class T>
@@ -129,32 +186,41 @@ void SparseMatrix<T>::insertValue(int row, int col, T val)
 	if (val == 0)
 	{
 		return;
+	}
+	T oldVal;
+	if (this->getVal(row, col, oldVal))
+	{
+		//oldVal = val;
+	}
+	else
+	{
+		// row can col does not exist yet, add it
+		data.insert(MatrixEntry(row, std::make_pair(col, val)));
+		nonZeroCount++;
 	}	
+}
+
+template <class T>
+void SparseMatrix<T>::addToValue(int row, int col, T val)
+{
+	if (val == 0)
+	{
+		return;
+	}
 	Range r = data.equal_range(row);
 	for (MatrixIter lowIt = r.first; lowIt != r.second; lowIt++)
 	{
 		if (lowIt->second.first == col)
 		{
-			lowIt->second.second = val;
+			lowIt->second.second += val;
 			return;
 		}
 	}
-	// column not found, insert it
+	// row can col does not exist yet, add it
 	data.insert(MatrixEntry(row, std::make_pair(col, val)));
 	nonZeroCount++;
 }
-/*
-template <class T>
-T& SparseMatrix<T>::operator()(int x, int y)
-{
-	Range rowX = data.equal_range(x);
-	for (MatrixIter it = rowX.begin(); it != rowX.end(); it++)
-	{
-		MatrixEntry entry = *it;
-	}
-	return (T)1;
-}
-*/
+
 /*
 template <class T>
 T* SparseMatrix<T>::getData(int rowIdx)
@@ -191,6 +257,39 @@ template <class T>
 int SparseMatrix<T>::getNumNonZeroElements()
 {
 	return nonZeroCount;
+}
+
+template <class T>
+bool SparseMatrix<T>::getVal(int row, int col, T & val)
+{
+	if (val == 0)
+	{
+		return false;
+	}
+	Range r = data.equal_range(row);
+	for (MatrixIter lowIt = r.first; lowIt != r.second; lowIt++)
+	{
+		if (lowIt->second.first == col)
+		{
+			val = lowIt->second.second;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class T>
+T & SparseMatrix<T>::operator()(int row, int col)
+{
+	Range r = data.equal_range(row);
+	for (MatrixIter lowIt = r.first; lowIt != r.second; lowIt++)
+	{
+		if (lowIt->second.first == col)
+		{
+			return lowIt->second.second;
+		}
+	}
+	return data.begin()->second.second;
 }
 /*
 template <class T>
@@ -326,6 +425,7 @@ void SparseMatrix<T>::copyValues(SparseMatrix<T> & from, int startRow, int endRo
 template <class T>
 void SparseMatrix<T>::fillRandomly(const int min, const int max)
 {
+	/*
 	for (int i = 0; i < rowCount; i++)
 	{
 		for (int j = 0; j < columnCount; j++)
@@ -335,6 +435,7 @@ void SparseMatrix<T>::fillRandomly(const int min, const int max)
 			(*this)(i, j) = randNum;
 		}
 	}
+	*/
 }
 template <class T>
 std::vector<T> SparseMatrix<T>::toVector()
@@ -346,6 +447,49 @@ template <class T>
 void SparseMatrix<T>::fromVector(std::vector<T> & v)
 {
 	std::cout << "lol" << std::endl;
+}
+
+template <class T>
+SparseMatrix<T> SparseMatrix<T>::multiply(SparseMatrix<T> & m)
+{
+	int nCols = m.getColumnCount();
+	SparseMatrix<T> result(this->rowCount, nCols);
+	if (!isValidToMultiply(*this, m))
+	{
+		return result;
+	}
+	for (MatrixConstIter it = data.begin(); it != data.end(); it++)
+	{
+		T val;
+		for (int i = 0; i < nCols; i++)
+		{
+			if (m.getVal(it->second.first, i, val))
+			{
+				result.addToValue(it->first, i, val * it->second.second);
+			}
+		}
+	}
+	return result;
+}
+
+template <class T>
+SparseMatrix<T> SparseMatrix<T>::add(SparseMatrix<T> & m)
+{
+	SparseMatrix<T> result(rowCount, columnCount);
+	if (!isValidToAdd(*this, m))
+	{
+		return result;
+	}
+
+	for (MatrixConstIter it = data.begin(); it != data.end(); it++)
+	{
+		T val;
+		if (m.getVal(it->first, it->second.first, val))
+		{
+			result.addToValue(it->first, it->second.first, val + it->second.second);
+		}
+	}
+	return result;
 }
 /*
 template <class T>
@@ -387,14 +531,13 @@ void SparseMatrix<T>::resize(const unsigned int newRowCount, const unsigned int 
 	this->data.resize(rowCount * columnCount);
 }
 */
+
 template <class T>
 std::ostream& operator<< (std::ostream& stream, const SparseMatrix<T>& matrix)
 {
 	matrix.print(stream);
 	return stream;
 }
-
-
 
 template <class T>
 SparseMatrix<T> transpose(SparseMatrix<T>& matrix)
@@ -436,7 +579,7 @@ bool isValidToAdd(SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 	}
 	return isValid;
 }
-
+/*
 template <class T>
 SparseMatrix<T> multiply(SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 {
@@ -448,6 +591,7 @@ SparseMatrix<T> multiply(SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 	{
 		return result;
 	}
+	
 	for (int i = 0; i < nRows; i++)
 	{
 		for (int j = 0; j < nCols; j++)
@@ -460,9 +604,15 @@ SparseMatrix<T> multiply(SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 			}
 		}
 	}
+	
+	//for (MatrixConstIter it = data.begin(); it != data.end(); it++)
+	//{
+
+	//}
 	return result;
 }
-
+*/
+/*
 template <class T>
 SparseMatrix<T> add(SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 {
@@ -482,5 +632,5 @@ SparseMatrix<T> add(SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 	}
 	return result;
 }
-
+*/
 

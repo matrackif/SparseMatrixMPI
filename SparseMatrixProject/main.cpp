@@ -19,7 +19,8 @@ int main(int argc, char **argv)
 	matrix2D<double> matrixL;
 	matrix2D<double> matrixL2;
 	matrix2D<double> mtx;
-	SparseMatrix<double> sm;
+	//SparseMatrix<double> sm;
+	/*
 	sm.insertValue(3, 2, 6);
 	sm.insertValue(3, 1, 3);
 	sm.insertValue(3, 2, 4);
@@ -27,17 +28,31 @@ int main(int argc, char **argv)
 	sm.insertValue(1, 2, 11);
 	sm.insertValue(1, 2, 11);
 	sm.insertValue(1, 2, 0.0);
-	/*
+	*/
+	
 	if (rank == 0)
 	{
+		SparseMatrix<double> sm = SparseMatrix<double>("../../test.txt");
+		SparseMatrix<double> sm2 = SparseMatrix<double>("../../test2.txt");
 		std::cout << "SM: \n" << sm << std::endl;
 		std::cout << "RowCount: " << sm.getRowCount() << " ColumnCount: " << sm.getColumnCount() 
 			<< " NonZeroCount: " << sm.getNumNonZeroElements() << std::endl;
 
-		std::cout << "mtx: \n" << mtx << std::endl;
-		std::cout << "RowCount: " << mtx.getRowCount() << " ColumnCount: " << mtx.getColumnCount() << std::endl;
+		std::cout << "SM2: \n" << sm2 << std::endl;
+		std::cout << "RowCount: " << sm2.getRowCount() << " ColumnCount: " << sm2.getColumnCount()
+			<< " NonZeroCount: " << sm2.getNumNonZeroElements() << std::endl;
+
+		SparseMatrix<double> res = sm.multiply(sm2);
+		std::cout << "res: \n" << res << std::endl;
+		std::cout << "RowCount: " << res.getRowCount() << " ColumnCount: " << res.getColumnCount()
+			<< " NonZeroCount: " << res.getNumNonZeroElements() << std::endl;
+
+		res = sm.add(res);
+		std::cout << "res after adding: \n" << res << std::endl;
+		std::cout << "RowCount: " << res.getRowCount() << " ColumnCount: " << res.getColumnCount()
+			<< " NonZeroCount: " << res.getNumNonZeroElements() << std::endl;
 	}
-	*/
+	
 	
 	double startP, endP, startS, endS, startSadd, endSadd, startPadd, endPadd;
 	if (rank == 0)
@@ -48,7 +63,9 @@ int main(int argc, char **argv)
 		// matrixL2 = matrix2D<double>(N, N, 1.0);
 		// std::cout << "matrixL: \n" << matrixL << std::endl;
 		// std::cout << "matrixL2: \n" << matrixL2 << std::endl;
-		mtx = matrix2D<double>("../../cavity08.mtx");
+		//mtx = matrix2D<double>("../../cavity08.mtx");
+		//std::cout << "mtx: \n" << mtx << std::endl;
+		//std::cout << "RowCount: " << mtx.getRowCount() << " ColumnCount: " << mtx.getColumnCount() << std::endl;
 		startS = MPI_Wtime();
 		//multiply(matrixL, matrixL2);
 		//multiply(mtx, mtx);
@@ -66,11 +83,11 @@ int main(int argc, char **argv)
 	}
 
 	startP = MPI_Wtime();
-	parallelMult(rank, size, mtx, mtx);
+	//parallelMult(rank, size, mtx, mtx);
 	endP = MPI_Wtime();
 
 	startPadd = MPI_Wtime();
-	parallelAdd(rank, size, mtx, mtx);
+	//parallelAdd(rank, size, mtx, mtx);
 	endPadd = MPI_Wtime();
 
 	if (rank == 0)
