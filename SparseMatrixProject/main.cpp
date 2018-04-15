@@ -29,11 +29,25 @@ int main(int argc, char **argv)
 	sm.insertValue(1, 2, 11);
 	sm.insertValue(1, 2, 0.0);
 	*/
-	
+	SparseMatrix<double> sm, sm2;
 	if (rank == 0)
 	{
-		SparseMatrix<double> sm = SparseMatrix<double>("../../test.txt");
-		SparseMatrix<double> sm2 = SparseMatrix<double>("../../test2.txt");
+		//std::vector<double> v = {3, 3,9, 0,0,1,0,1,5.4,0,3,2.0, 1,1,3,1,0,1.1, 1,2,5,2,0,1,2,1,7,2,2,2};
+		//SparseMatrix<double> sm = SparseMatrix<double>(v);
+		//std::vector<double> tmp = sm.toVector();
+		//sm.fromVector(tmp);
+		sm = SparseMatrix<double>("../../test1.txt");
+		sm2 = SparseMatrix<double>("../../test2.txt");
+		std::vector<std::vector<double>> vec = sm2.getUniqueRows();
+		for (int i = 0; i < vec.size(); i++)
+		{
+			for (int j = 0; j < vec[i].size(); j++)
+			{
+				std::cout << vec[i][j] << ",";
+			}
+			std::cout << std::endl;
+		}
+		
 		std::cout << "SM: \n" << sm << std::endl;
 		std::cout << "RowCount: " << sm.getRowCount() << " ColumnCount: " << sm.getColumnCount() 
 			<< " NonZeroCount: " << sm.getNumNonZeroElements() << std::endl;
@@ -43,12 +57,12 @@ int main(int argc, char **argv)
 			<< " NonZeroCount: " << sm2.getNumNonZeroElements() << std::endl;
 
 		SparseMatrix<double> res = sm.multiply(sm2);
-		std::cout << "res: \n" << res << std::endl;
+		std::cout << "res after multiplying sm * sm2: \n" << res << std::endl;
 		std::cout << "RowCount: " << res.getRowCount() << " ColumnCount: " << res.getColumnCount()
 			<< " NonZeroCount: " << res.getNumNonZeroElements() << std::endl;
 
-		res = sm.add(res);
-		std::cout << "res after adding: \n" << res << std::endl;
+		res = sm.add(sm2);
+		std::cout << "res after adding sm + sm2: \n" << res << std::endl;
 		std::cout << "RowCount: " << res.getRowCount() << " ColumnCount: " << res.getColumnCount()
 			<< " NonZeroCount: " << res.getNumNonZeroElements() << std::endl;
 	}
@@ -84,10 +98,13 @@ int main(int argc, char **argv)
 
 	startP = MPI_Wtime();
 	//parallelMult(rank, size, mtx, mtx);
+	parallelMult(rank, size, sm, sm);
+	parallelMult(rank, size, sm, sm2);
 	endP = MPI_Wtime();
 
 	startPadd = MPI_Wtime();
-	//parallelAdd(rank, size, mtx, mtx);
+	parallelAdd(rank, size, sm, sm);
+	parallelAdd(rank, size, sm, sm2);
 	endPadd = MPI_Wtime();
 
 	if (rank == 0)

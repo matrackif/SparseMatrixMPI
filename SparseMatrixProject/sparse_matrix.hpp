@@ -29,9 +29,15 @@ template <class T>
 class SparseMatrix
 {
 public:
+	typedef std::multimap<int, std::pair<int, T>> MatrixMap;
+	typedef std::pair<int, std::pair<int, T>> MatrixEntry;
+	typedef typename MatrixMap::iterator MatrixIter;
+	typedef typename MatrixMap::const_iterator MatrixConstIter;
+	typedef std::pair<typename MatrixIter, typename MatrixIter> Range;
 	SparseMatrix();
 	SparseMatrix(int rowCount, int colCount, int nZeroCount=0);
 	SparseMatrix(const std::string & mtxFile);
+	SparseMatrix(std::vector<T> & v);
 	//SparseMatrix(int rowCount, int colCount, T fill);
 	//void print() const;
 	// int getColumnCount(return columnCount;)
@@ -56,12 +62,14 @@ public:
 	//void makePositiveDefinite();
 	std::vector<T> toVector();
 	void fromVector(std::vector<T> & v);
+	std::vector<std::vector<T>> getUniqueRows();
 	SparseMatrix<T> multiply(SparseMatrix<T> & m1);
 	SparseMatrix<T> add(SparseMatrix<T> & m1);
 	friend std::ostream& operator<< <>(std::ostream& stream, const SparseMatrix<T>& matrix);
 	friend SparseMatrix<T> transpose <>(SparseMatrix<T>& matrix);
 	friend bool isValidToMultiply <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 	friend bool isValidToAdd <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
+	typename MatrixMap data;
 	//friend SparseMatrix<T> multiply <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 	//friend SparseMatrix<T> add <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 private:
@@ -69,12 +77,6 @@ private:
 	int columnCount;
 	int rowCount;
 	int nonZeroCount;
-	typedef std::multimap<int, std::pair<int, T>> MatrixMap;
-	typedef std::pair<int, std::pair<int, T>> MatrixEntry;
-	typedef typename MatrixMap::iterator MatrixIter;
-	typedef typename MatrixMap::const_iterator MatrixConstIter;
-	typedef std::pair<typename MatrixIter, typename MatrixIter> Range;
-	typename MatrixMap data;
 	//void resize(const unsigned int newRowCount, const unsigned int newColumnCount);
 };
 template <class T>
@@ -138,6 +140,22 @@ SparseMatrix<T>::SparseMatrix(const std::string & mtxFile)
 		// or end of file (can't make the difference)
 	}
 	*/
+}
+template <class T>
+SparseMatrix<T>::SparseMatrix(std::vector<T> & v) : rowCount(0), columnCount(0), nonZeroCount(0), data()
+{
+	if (v.size() == 0 || v.size() % 3 != 0)
+	{
+		std::cout << "Warning...created SparseMatrix from an empty or invalid vector" << std::endl;
+		return;
+	}
+	rowCount = (int)v[0];
+	columnCount = (int)v[1];
+	nonZeroCount = (int)v[2];
+	for (int i = 3; i < v.size(); i+=3)
+	{
+		data.insert(MatrixEntry((int)v[i], std::make_pair((int)v[i + 1], (T)v[i + 2])));
+	}
 }
 /*
 template <class T>
@@ -440,13 +458,54 @@ void SparseMatrix<T>::fillRandomly(const int min, const int max)
 template <class T>
 std::vector<T> SparseMatrix<T>::toVector()
 {
-	return std::vector<T>();
+	std::vector<T> ret;
+	ret.push_back(rowCount);
+	ret.push_back(columnCount);
+	ret.push_back(nonZeroCount);
+	for (MatrixConstIter it = data.begin(); it != data.end(); it++)
+	{
+		ret.push_back(it->first);
+		ret.push_back(it->second.first);
+		ret.push_back(it->second.second);
+	}
+	return ret;
 }
 
 template <class T>
 void SparseMatrix<T>::fromVector(std::vector<T> & v)
 {
-	std::cout << "lol" << std::endl;
+	if (v.size() == 0 || v.size() % 3 != 0)
+	{
+		std::cout << "Warning...fromVector() with an empty or invalid vector" << std::endl;
+		return;
+	}
+	data.clear();
+	rowCount = (int)v[0];
+	columnCount = (int)v[1];
+	nonZeroCount = (int)v[2];
+	for (int i = 3; i < v.size(); i += 3)
+	{
+		data.insert(MatrixEntry((int)v[i], std::make_pair((int)v[i + 1], (T)v[i + 2])));
+	}
+}
+
+template <class T>
+std::vector<std::vector<T>> SparseMatrix<T>::getUniqueRows()
+{
+	std::vector<std::vector<T>> ret;
+	for (MatrixConstIter itRows = data.begin(); itRows != data.end(); itRows = data.upper_bound(itRows->first))
+	{
+		Range r = data.equal_range(itRows->first);
+		std::vector<T> currentRow;
+		for (MatrixIter it = r.first; it != r.second; it++)
+		{
+			currentRow.push_back(it->first);
+			currentRow.push_back(it->second.first);
+			currentRow.push_back(it->second.second);
+		}
+		ret.push_back(currentRow);
+	}
+	return ret;
 }
 
 template <class T>
@@ -487,6 +546,19 @@ SparseMatrix<T> SparseMatrix<T>::add(SparseMatrix<T> & m)
 		if (m.getVal(it->first, it->second.first, val))
 		{
 			result.addToValue(it->first, it->second.first, val + it->second.second);
+		}
+		else
+		{
+			result.addToValue(it->first, it->second.first, it->second.second);
+		}
+	}
+
+	for (MatrixConstIter it = m.data.begin(); it != m.data.end(); it++)
+	{
+		T val;
+		if (!getVal(it->first, it->second.first, val))
+		{
+			result.addToValue(it->first, it->second.first, it->second.second);
 		}
 	}
 	return result;
@@ -633,4 +705,3 @@ SparseMatrix<T> add(SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 	return result;
 }
 */
-
