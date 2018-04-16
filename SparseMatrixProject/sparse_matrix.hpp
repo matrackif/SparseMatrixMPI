@@ -4,6 +4,8 @@
 #include <stdlib.h> 
 #include <cmath>
 #include <map>
+#include <cstdlib>
+#include <ctime>
 
 template <class T> class SparseMatrix;
 
@@ -29,11 +31,6 @@ template <class T>
 class SparseMatrix
 {
 public:
-	typedef std::multimap<int, std::pair<int, T>> MatrixMap;
-	typedef std::pair<int, std::pair<int, T>> MatrixEntry;
-	typedef typename MatrixMap::iterator MatrixIter;
-	typedef typename MatrixMap::const_iterator MatrixConstIter;
-	typedef std::pair<typename MatrixIter, typename MatrixIter> Range;
 	SparseMatrix();
 	SparseMatrix(int rowCount, int colCount, int nZeroCount=0);
 	SparseMatrix(const std::string & mtxFile);
@@ -62,14 +59,15 @@ public:
 	//void makePositiveDefinite();
 	std::vector<T> toVector();
 	void fromVector(std::vector<T> & v);
-	std::vector<std::vector<T>> getUniqueRows();
+	std::vector<std::vector<T> > getUniqueRows();
 	SparseMatrix<T> multiply(SparseMatrix<T> & m1);
 	SparseMatrix<T> add(SparseMatrix<T> & m1);
+    void makeKdiagonal(int k, double prob = 0.1);
 	friend std::ostream& operator<< <>(std::ostream& stream, const SparseMatrix<T>& matrix);
 	friend SparseMatrix<T> transpose <>(SparseMatrix<T>& matrix);
 	friend bool isValidToMultiply <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 	friend bool isValidToAdd <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
-	typename MatrixMap data;
+	std::multimap<int, std::pair<int, T> > data;
 	//friend SparseMatrix<T> multiply <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 	//friend SparseMatrix<T> add <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
 private:
@@ -94,7 +92,7 @@ SparseMatrix<T>::SparseMatrix(int x, int y, int nZeroCount) : rowCount(x), colum
 template <class T>
 SparseMatrix<T>::SparseMatrix(const std::string & mtxFile)
 {
-	std::ifstream file(mtxFile);
+	std::ifstream file(mtxFile.c_str(), std::ifstream::in);
 	std::string line;
 	bool isHeaderLine = true;
 	while (std::getline(file, line))
@@ -154,7 +152,7 @@ SparseMatrix<T>::SparseMatrix(std::vector<T> & v) : rowCount(0), columnCount(0),
 	nonZeroCount = (int)v[2];
 	for (int i = 3; i < v.size(); i+=3)
 	{
-		data.insert(MatrixEntry((int)v[i], std::make_pair((int)v[i + 1], (T)v[i + 2])));
+		data.insert(std::pair<int, std::pair<int, T> >((int)v[i], std::make_pair((int)v[i + 1], (T)v[i + 2])));
 	}
 }
 /*
@@ -191,7 +189,7 @@ void SparseMatrix<T>::print(std::ostream & os) const
 		os << std::endl;
 	}
 	*/
-	for (MatrixConstIter it = data.begin(); it != data.end(); it++)
+	for (typename std::multimap<int, std::pair<int, T> >::const_iterator it = data.begin(); it != data.end(); it++)
 	{
 		os << "Row: " << it->first << " Column: " << it->second.first 
 			<< " Value: " << it->second.second << std::endl;
@@ -213,7 +211,7 @@ void SparseMatrix<T>::insertValue(int row, int col, T val)
 	else
 	{
 		// row can col does not exist yet, add it
-		data.insert(MatrixEntry(row, std::make_pair(col, val)));
+		data.insert(std::pair<int, std::pair<int, T> >(row, std::make_pair(col, val)));
 		nonZeroCount++;
 	}	
 }
@@ -225,8 +223,8 @@ void SparseMatrix<T>::addToValue(int row, int col, T val)
 	{
 		return;
 	}
-	Range r = data.equal_range(row);
-	for (MatrixIter lowIt = r.first; lowIt != r.second; lowIt++)
+	std::pair<typename std::multimap<int, typename std::pair<int, T> >::iterator, typename std::multimap<int, std::pair<int, T> >::iterator> r = data.equal_range(row);
+	for (typename std::multimap<int, std::pair<int, T> >::iterator lowIt = r.first; lowIt != r.second; lowIt++)
 	{
 		if (lowIt->second.first == col)
 		{
@@ -235,7 +233,7 @@ void SparseMatrix<T>::addToValue(int row, int col, T val)
 		}
 	}
 	// row can col does not exist yet, add it
-	data.insert(MatrixEntry(row, std::make_pair(col, val)));
+	data.insert(std::pair<int, std::pair<int, T> >(row, std::make_pair(col, val)));
 	nonZeroCount++;
 }
 
@@ -284,8 +282,8 @@ bool SparseMatrix<T>::getVal(int row, int col, T & val)
 	{
 		return false;
 	}
-	Range r = data.equal_range(row);
-	for (MatrixIter lowIt = r.first; lowIt != r.second; lowIt++)
+	std::pair<typename std::multimap<int, std::pair<int, T> >::iterator, typename std::multimap<int, std::pair<int, T> >::iterator> r = data.equal_range(row);
+	for (typename std::multimap<int, std::pair<int, T> >::iterator lowIt = r.first; lowIt != r.second; lowIt++)
 	{
 		if (lowIt->second.first == col)
 		{
@@ -299,8 +297,8 @@ bool SparseMatrix<T>::getVal(int row, int col, T & val)
 template <class T>
 T & SparseMatrix<T>::operator()(int row, int col)
 {
-	Range r = data.equal_range(row);
-	for (MatrixIter lowIt = r.first; lowIt != r.second; lowIt++)
+	std::pair<typename std::multimap<int, std::pair<int, T> >::iterator, typename std::multimap<int, std::pair<int, T> >::iterator> r = data.equal_range(row);
+	for (typename std::multimap<int, std::pair<int, T> >::iterator lowIt = r.first; lowIt != r.second; lowIt++)
 	{
 		if (lowIt->second.first == col)
 		{
@@ -462,7 +460,7 @@ std::vector<T> SparseMatrix<T>::toVector()
 	ret.push_back(rowCount);
 	ret.push_back(columnCount);
 	ret.push_back(nonZeroCount);
-	for (MatrixConstIter it = data.begin(); it != data.end(); it++)
+	for (typename std::multimap<int, std::pair<int, T> >::const_iterator it = data.begin(); it != data.end(); it++)
 	{
 		ret.push_back(it->first);
 		ret.push_back(it->second.first);
@@ -485,19 +483,19 @@ void SparseMatrix<T>::fromVector(std::vector<T> & v)
 	nonZeroCount = (int)v[2];
 	for (int i = 3; i < v.size(); i += 3)
 	{
-		data.insert(MatrixEntry((int)v[i], std::make_pair((int)v[i + 1], (T)v[i + 2])));
+		data.insert(std::pair<int, std::pair<int, T> >((int)v[i], std::make_pair((int)v[i + 1], (T)v[i + 2])));
 	}
 }
 
 template <class T>
-std::vector<std::vector<T>> SparseMatrix<T>::getUniqueRows()
+std::vector<std::vector<T> > SparseMatrix<T>::getUniqueRows()
 {
-	std::vector<std::vector<T>> ret;
-	for (MatrixConstIter itRows = data.begin(); itRows != data.end(); itRows = data.upper_bound(itRows->first))
+	std::vector<std::vector<T> > ret;
+	for (typename std::multimap<int, std::pair<int, T> >::const_iterator itRows = data.begin(); itRows != data.end(); itRows = data.upper_bound(itRows->first))
 	{
-		Range r = data.equal_range(itRows->first);
+		std::pair<typename std::multimap<int, std::pair<int, T> >::iterator, typename std::multimap<int, std::pair<int, T> >::iterator> r = data.equal_range(itRows->first);
 		std::vector<T> currentRow;
-		for (MatrixIter it = r.first; it != r.second; it++)
+		for (typename std::multimap<int, std::pair<int, T> >::iterator it = r.first; it != r.second; it++)
 		{
 			currentRow.push_back(it->first);
 			currentRow.push_back(it->second.first);
@@ -517,7 +515,7 @@ SparseMatrix<T> SparseMatrix<T>::multiply(SparseMatrix<T> & m)
 	{
 		return result;
 	}
-	for (MatrixConstIter it = data.begin(); it != data.end(); it++)
+	for (typename std::multimap<int, std::pair<int, T> >::const_iterator it = data.begin(); it != data.end(); it++)
 	{
 		T val;
 		for (int i = 0; i < nCols; i++)
@@ -540,7 +538,7 @@ SparseMatrix<T> SparseMatrix<T>::add(SparseMatrix<T> & m)
 		return result;
 	}
 
-	for (MatrixConstIter it = data.begin(); it != data.end(); it++)
+	for (typename std::multimap<int, std::pair<int, T> >::const_iterator it = data.begin(); it != data.end(); it++)
 	{
 		T val;
 		if (m.getVal(it->first, it->second.first, val))
@@ -553,7 +551,7 @@ SparseMatrix<T> SparseMatrix<T>::add(SparseMatrix<T> & m)
 		}
 	}
 
-	for (MatrixConstIter it = m.data.begin(); it != m.data.end(); it++)
+	for (typename std::multimap<int, std::pair<int, T> >::const_iterator it = m.data.begin(); it != m.data.end(); it++)
 	{
 		T val;
 		if (!getVal(it->first, it->second.first, val))
@@ -562,6 +560,58 @@ SparseMatrix<T> SparseMatrix<T>::add(SparseMatrix<T> & m)
 		}
 	}
 	return result;
+}
+
+template <class T>
+void SparseMatrix<T>::makeKdiagonal(int k, double prob)
+{
+    srand(time(NULL));
+    const int max = 5, min = 0;
+    int topHalfDiags = (k % 2 == 0) ? k / 2 : (k / 2) + 1;
+    topHalfDiags = topHalfDiags > columnCount ? columnCount : topHalfDiags;
+    int bottomHalfDiags = k / 2;
+    bottomHalfDiags = bottomHalfDiags > rowCount - 1 ? rowCount - 1 : bottomHalfDiags;
+    int percentChance = prob * 100;
+    data.clear();
+    for(int i = 0; i < topHalfDiags; i++)
+    {
+        for(int c = i, r = 0; c < columnCount && r < rowCount; c++, r++)
+        {
+            // check probability of putting element here
+            int num = rand() % static_cast<int>(101);
+            if(num <= percentChance)
+            {
+                T val = (T)(min + (rand() % static_cast<int>(max - min + 1)));
+                this->insertValue(r, c, val);
+            }
+            
+        }
+    }
+    for(int i = 0; i < bottomHalfDiags; i++)
+    {
+        for(int r = i + 1, c = 0; r < rowCount && c < columnCount; c++, r++)
+        {
+            // check probability of putting element here
+            int num = rand() % static_cast<int>(101);
+            if(num <= percentChance)
+            {
+                T val = (T)(min + (rand() % static_cast<int>(max - min + 1)));
+                this->insertValue(r, c, val);
+            }
+            
+        }
+    }
+    /*
+    for (int i = 0; i < rowCount; i++)
+	{
+		for (int j = 0; j < columnCount; j++)
+		{
+			T randNum = (T)(min + (rand() % static_cast<int>(max - min + 1)));
+			randNum = (randNum == 0.0) ? 1.0 : randNum;
+			(*this)(i, j) = randNum;
+		}
+	}
+    */
 }
 /*
 template <class T>
