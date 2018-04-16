@@ -113,7 +113,7 @@ matrix2D<T>::matrix2D(int x, int y, T fill) : data(x*y, fill), rowCount(x), colu
 template <class T>
 matrix2D<T>::matrix2D(const std::string & mtxFile)
 {
-	std::ifstream file(mtxFile);
+	std::ifstream file(mtxFile.c_str(), std::ifstream::in);
 	std::string line;
 	bool isHeaderLine = true;
 	while (std::getline(file, line))
@@ -480,5 +480,4 @@ matrix2D<T> add(matrix2D<T> & m1, matrix2D<T> & m2)
 	}
 	return result;
 }
-
 
