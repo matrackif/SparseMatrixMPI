@@ -174,8 +174,8 @@ void parallelAdd(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 	const int tag = 0;
 	MPI_Status status;
 	// TODO have rank 0 bcast matrix dims to all other ranks
-	std::vector<std::vector<double>> uniqueRows;
-	std::vector<std::vector<double>> uniqueRows2;
+	std::vector<std::vector<double> > uniqueRows;
+	std::vector<std::vector<double> > uniqueRows2;
 	if (rank == 0)
 	{
 		uniqueRows = m1.getUniqueRows();
@@ -337,7 +337,9 @@ void parallelAdd(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 		MPI_Recv(&m2SubMatrixVec[0], m2Size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
 		// std::cout << "Rank=" << rank << " m1 submatrix: \n" << m1SubMatrix << std::endl;
 		// std::cout << "Rank=" << rank << " m2 submatrix: \n" << m2SubMatrix << std::endl;
-		std::vector<T> partialResultVec = (SparseMatrix<T>(m1SubMatrixVec).add(SparseMatrix<T>(m2SubMatrixVec))).toVector();
+		m1SubMatrix = SparseMatrix<T>(m1SubMatrixVec);
+        m2SubMatrix = SparseMatrix<T>(m2SubMatrixVec);
+		std::vector<T> partialResultVec = (m1SubMatrix.add(m2SubMatrix)).toVector();
 		int size = partialResultVec.size();
 		MPI_Send(&size, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);
 		MPI_Send(&partialResultVec[0], size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD);
@@ -350,7 +352,7 @@ void parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2
 	const int tag = 0;
 	MPI_Status status;
 	// TODO have rank 0 bcast matrix dims to all other ranks
-	std::vector<std::vector<double>> uniqueRows;
+	std::vector<std::vector<double> > uniqueRows;
 	if (rank == 0)
 	{
 		uniqueRows = m1.getUniqueRows();
@@ -466,7 +468,7 @@ void parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2
 		}
 		*/
 		result.fromVector(resultAsVec);
-		std::cout << "parallelMult() Finished! m1: \n" << m1 << "m2: \n" << m2 << " m1 * m2: \n" << result << std::endl;
+		std::cout << "SparseMatrix parallelMult() Finished! m1: \n" << m1 << "m2: \n" << m2 << " m1 * m2: \n" << result << std::endl;
 	}
 	else
 	{
@@ -481,7 +483,9 @@ void parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2
 		MPI_Recv(&m2SubMatrixVec[0], m2Size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
 		// std::cout << "Rank=" << rank << " m1 submatrix: \n" << m1SubMatrix << std::endl;
 		// std::cout << "Rank=" << rank << " m2 submatrix: \n" << m2SubMatrix << std::endl;
-		std::vector<T> partialResultVec = (SparseMatrix<T>(m1SubMatrixVec).multiply(SparseMatrix<T>(m2SubMatrixVec))).toVector();
+        m1SubMatrix = SparseMatrix<T>(m1SubMatrixVec);
+        m2SubMatrix = SparseMatrix<T>(m2SubMatrixVec);
+		std::vector<T> partialResultVec = (m1SubMatrix.multiply(m2SubMatrix)).toVector();
 		int size = partialResultVec.size();
 		MPI_Send(&size, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);
 		MPI_Send(&partialResultVec[0], size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD);
