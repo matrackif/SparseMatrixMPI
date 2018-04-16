@@ -29,7 +29,8 @@ int main(int argc, char **argv)
 	sm.insertValue(1, 2, 11);
 	sm.insertValue(1, 2, 0.0);
 	*/
-	SparseMatrix<double> sm, sm2;
+	SparseMatrix<double> sm, sm2, sm3, smk;
+    matrix2D<double> m;
 	if (rank == 0)
 	{
 		//std::vector<double> v = {3, 3,9, 0,0,1,0,1,5.4,0,3,2.0, 1,1,3,1,0,1.1, 1,2,5,2,0,1,2,1,7,2,2,2};
@@ -38,7 +39,15 @@ int main(int argc, char **argv)
 		//sm.fromVector(tmp);
 		sm = SparseMatrix<double>("../../test1.txt");
 		sm2 = SparseMatrix<double>("../../test2.txt");
-		std::vector<std::vector<double>> vec = sm2.getUniqueRows();
+        sm3 = SparseMatrix<double>("../../bcsstk05.mtx");
+        smk = SparseMatrix<double>(10, 10);
+        smk.makeKdiagonal(5);
+        m = matrix2D<double>("../../bcsstk05.mtx");
+        std::cout << "SMK: \n" << smk << std::endl;
+		std::cout << "RowCount: " << smk.getRowCount() << " ColumnCount: " << smk.getColumnCount() 
+			<< " NonZeroCount: " << smk.getNumNonZeroElements() << std::endl;
+        /*
+		std::vector<std::vector<double> > vec = sm2.getUniqueRows();
 		for (int i = 0; i < vec.size(); i++)
 		{
 			for (int j = 0; j < vec[i].size(); j++)
@@ -47,7 +56,7 @@ int main(int argc, char **argv)
 			}
 			std::cout << std::endl;
 		}
-		
+		*/
 		std::cout << "SM: \n" << sm << std::endl;
 		std::cout << "RowCount: " << sm.getRowCount() << " ColumnCount: " << sm.getColumnCount() 
 			<< " NonZeroCount: " << sm.getNumNonZeroElements() << std::endl;
@@ -69,6 +78,7 @@ int main(int argc, char **argv)
 	
 	
 	double startP, endP, startS, endS, startSadd, endSadd, startPadd, endPadd;
+    double startPmultSparse, endPmultSparse, startPaddSparse, endPaddSparse, startSaddSparse, endSaddSparse, startSmultSparse, endSmultSparse;
 	if (rank == 0)
 	{
 		// matrixL = matrix2D<double>(N, N);
@@ -80,15 +90,24 @@ int main(int argc, char **argv)
 		//mtx = matrix2D<double>("../../cavity08.mtx");
 		//std::cout << "mtx: \n" << mtx << std::endl;
 		//std::cout << "RowCount: " << mtx.getRowCount() << " ColumnCount: " << mtx.getColumnCount() << std::endl;
+
 		startS = MPI_Wtime();
-		//multiply(matrixL, matrixL2);
+		multiply(m, m);
 		//multiply(mtx, mtx);
 		endS = MPI_Wtime();
+
 		startSadd = MPI_Wtime();
-		//add(matrixL, matrixL2);
+		add(m, m);
 		//add(mtx, mtx);
 		endSadd = MPI_Wtime();
 
+        startSmultSparse = MPI_Wtime();
+        sm3.multiply(sm3);
+        endSmultSparse = MPI_Wtime();
+
+        startSaddSparse = MPI_Wtime();
+        sm3.add(sm3);
+        endSaddSparse = MPI_Wtime();
 		//std::cout << "submatrixL2: \n" << matrixL.createSubMatrix(0, 3, 0, 1) << std::endl;
 		//matrix2D<double> product = multiply(matrixL, matrixL2);
 		//std::cout << "multiply done: " << std::endl;
@@ -97,15 +116,24 @@ int main(int argc, char **argv)
 	}
 
 	startP = MPI_Wtime();
-	//parallelMult(rank, size, mtx, mtx);
-	parallelMult(rank, size, sm, sm);
-	parallelMult(rank, size, sm, sm2);
+	parallelMult(rank, size, m, m);
+	//parallelMult(rank, size, sm, sm);
+	//parallelMult(rank, size, sm, sm2);
 	endP = MPI_Wtime();
 
 	startPadd = MPI_Wtime();
-	parallelAdd(rank, size, sm, sm);
-	parallelAdd(rank, size, sm, sm2);
+    parallelAdd(rank, size, m, m);
+	//parallelAdd(rank, size, sm, sm);
+	//parallelAdd(rank, size, sm, sm2);
 	endPadd = MPI_Wtime();
+
+    startPmultSparse = MPI_Wtime();
+	parallelMult(rank, size, sm3, sm3);
+	endPmultSparse = MPI_Wtime();
+
+	startPaddSparse = MPI_Wtime();
+    parallelAdd(rank, size, sm3, sm3);
+	endPaddSparse = MPI_Wtime();
 
 	if (rank == 0)
 	{
@@ -113,6 +141,11 @@ int main(int argc, char **argv)
 		std::cout << "Parallel mult time: " << endP - startP << "s" << std::endl;
 		std::cout << "Sequential add time: " << endSadd - startSadd << "s" << std::endl;
 		std::cout << "Parallel add time: " << endPadd - startPadd << "s" << std::endl;
+
+        std::cout << "Sparse sequential mult time: " << endSmultSparse - startSmultSparse << "s" << std::endl;
+		std::cout << "Sparse parallel mult time: " << endPmultSparse - startPmultSparse << "s" << std::endl;
+		std::cout << "Sparse sequential add time: " << endSaddSparse - startSaddSparse << "s" << std::endl;
+		std::cout << "Sparse parallel add time: " << endPaddSparse - startPaddSparse << "s" << std::endl;
 	}
 	
 
