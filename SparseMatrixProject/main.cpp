@@ -19,29 +19,55 @@ int main(int argc, char **argv)
 	matrix2D<double> matrixL;
 	matrix2D<double> matrixL2;
 	matrix2D<double> mtx;
-	SparseMatrix<double> sm, sm2, sm3, smk;
+	SparseMatrix<double> sm, sm2, sm3, smk, randVec, randVec2, testA, testX, testB;
     matrix2D<double> m;
-	
 	double startP, endP, startS, endS, startSadd, endSadd, startPadd, endPadd;
     double startPmultSparse, endPmultSparse, startPaddSparse, endPaddSparse, startSaddSparse, endSaddSparse, startSmultSparse, endSmultSparse;
 	if (rank == 0)
 	{
+		testA = SparseMatrix<double>(3, 3, 0);
+		testX = SparseMatrix<double>(3, 1, 0);
+		testB = SparseMatrix<double>(3, 1, 0);
+		testA.insertValue(0, 0, 1);
+		testA.insertValue(1, 0, 1);
+		testA.insertValue(1, 1, 1);
+		testA.insertValue(2, 0, 1);
+		testA.insertValue(2, 1, 1);
+		testA.insertValue(2, 2, 2);
+		testB.insertValue(0, 0, 1);
+		testB.insertValue(1, 0, 2);
+		testB.insertValue(2, 0, 3);
+		std::cout << "testA: \n" << testA << std::endl;
+		std::cout << "RowCount: " << testA.getRowCount() << " ColumnCount: " << testA.getColumnCount()
+			<< " NonZeroCount: " << testA.getNumNonZeroElements() << std::endl;
+		std::cout << "testX: \n" << testX << std::endl;
+		std::cout << "RowCount: " << testX.getRowCount() << " ColumnCount: " << testX.getColumnCount()
+			<< " NonZeroCount: " << testX.getNumNonZeroElements() << std::endl;
+		std::cout << "testB: \n" << testB << std::endl;
+		std::cout << "RowCount: " << testB.getRowCount() << " ColumnCount: " << testB.getColumnCount()
+			<< " NonZeroCount: " << testB.getNumNonZeroElements() << std::endl;
 		sm = SparseMatrix<double>("../../bcsstk05.mtx");
-		SparseMatrix<double> randVec(sm.getColumnCount(), 1);
-		randVec.fillRandomly();
-		std::cout << "randVec: \n" << randVec << std::endl;
-		std::cout << "RowCount: " << randVec.getRowCount() << " ColumnCount: " << randVec.getColumnCount()
-			<< " NonZeroCount: " << randVec.getNumNonZeroElements() << std::endl;
-		SparseMatrix<double> randVecTransposed = transpose(randVec);
-		std::cout << "randVecTransposed: \n" << randVecTransposed << std::endl;
-		std::cout << "RowCount: " << randVecTransposed.getRowCount() << " ColumnCount: " << randVecTransposed.getColumnCount()
-			<< " NonZeroCount: " << randVecTransposed.getNumNonZeroElements() << std::endl;
-		SparseMatrix<double> randVec2(sm.getColumnCount(), 1);
+		randVec = SparseMatrix<double>(sm.getColumnCount(), 1);
+		randVec.fillRandomly(2, 2, 1);
+		//std::cout << "randVec: \n" << randVec << std::endl;
+		//std::cout << "RowCount: " << randVec.getRowCount() << " ColumnCount: " << randVec.getColumnCount()
+		//	<< " NonZeroCount: " << randVec.getNumNonZeroElements() << std::endl;
+		
+		//SparseMatrix<double> randVecTransposed = transpose(randVec);
+		//std::cout << "randVecTransposed: \n" << randVecTransposed << std::endl;
+		//std::cout << "RowCount: " << randVecTransposed.getRowCount() << " ColumnCount: " << randVecTransposed.getColumnCount()
+		//	<< " NonZeroCount: " << randVecTransposed.getNumNonZeroElements() << std::endl;
+		
+		randVec2 = SparseMatrix<double>(sm.getColumnCount(), 1);
 		randVec2.fillRandomly(1, 1, 1);
-		SparseMatrix<double> subRandVec = randVec.sub(randVec2);
-		std::cout << "subRandVec: \n" << subRandVec << std::endl;
-		std::cout << "RowCount: " << subRandVec.getRowCount() << " ColumnCount: " << subRandVec.getColumnCount()
-			<< " NonZeroCount: " << subRandVec.getNumNonZeroElements() << std::endl;
+		randVec2 = -1 * randVec2;
+		//std::cout << "randVec2: \n" << randVec2 << std::endl;
+		//std::cout << "RowCount: " << randVec2.getRowCount() << " ColumnCount: " << randVec2.getColumnCount()
+		//	<< " NonZeroCount: " << randVec2.getNumNonZeroElements() << std::endl;
+		//SparseMatrix<double> subRandVec = randVec.sub(randVec2);
+		//std::cout << "subRandVec: \n" << subRandVec << std::endl;
+		//std::cout << "RowCount: " << subRandVec.getRowCount() << " ColumnCount: " << subRandVec.getColumnCount()
+		//	<< " NonZeroCount: " << subRandVec.getNumNonZeroElements() << std::endl;
 		/*
 		sm = SparseMatrix<double>("../../test1.txt");
 		sm2 = SparseMatrix<double>("../../test2.txt");
@@ -98,6 +124,8 @@ int main(int argc, char **argv)
         endSaddSparse = MPI_Wtime();
 		*/
 	}
+	//conjugateGradient(rank, size, sm, randVec, randVec2);
+	conjugateGradient(rank, size, testA, testB, testX);
 	/*
 	startP = MPI_Wtime();
 	parallelMult(rank, size, m, m);

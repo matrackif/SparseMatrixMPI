@@ -169,7 +169,7 @@ void parallelAdd(int rank, int size, matrix2D<T> & m1, matrix2D<T> & m2)
 
 
 template <class T>
-void parallelAdd(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2)
+SparseMatrix<T> parallelAdd(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 {
 	const int tag = 0;
 	MPI_Status status;
@@ -203,7 +203,7 @@ void parallelAdd(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 		{
 			std::cerr << "Sparse Matrix parallelAdd(). Error, dimensions don't match" << std::endl;
 		}
-		return;
+		return SparseMatrix<T>();
 	}
 	SparseMatrix<T> result, m1SubMatrix, m2SubMatrix;
 	int m1MinRowsPerProcess = m1UniqueRowCount / size;
@@ -217,8 +217,8 @@ void parallelAdd(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 	{
 		// int offset = (m1RowCount % size) + (m1RowCount / size);
 		//std::cout << "m1RowCount: " << m1RowCount << " m1ColCount: " << m1ColCount << " m2RowCount: " << m2RowCount << " m2ColCount: " << m2ColCount << std::endl;
-		std::cout << "parallelAdd() Rank=" << rank << " numRowsPerProcess: " << numRowsPerProcess << std::endl;
-		std::cout << "parallelAdd() Rank=" << rank << " numRowsPerProcessM2: " << numRowsPerProcessM2 << std::endl;
+		//std::cout << "parallelAdd() Rank=" << rank << " numRowsPerProcess: " << numRowsPerProcess << std::endl;
+		//std::cout << "parallelAdd() Rank=" << rank << " numRowsPerProcessM2: " << numRowsPerProcessM2 << std::endl;
 		//std::cout << "matrix m1: \n" << m1 << std::endl;
 		//std::cout << "matrix m2: \n" << m2 << std::endl;
 		result = SparseMatrix<T>(m1.getRowCount(), m2.getColumnCount());
@@ -322,16 +322,17 @@ void parallelAdd(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 		}
 		*/
 		result.fromVector(resultAsVec);
-		std::cout << "SparseMatrix parallelAdd() Finished! m1: \n" << m1 << "m2: \n" << m2 << " m1 + m2: \n" << result << std::endl;
+		//std::cout << "SparseMatrix parallelAdd() Finished! m1: \n" << m1 << "m2: \n" << m2 << " m1 + m2: \n" << result << std::endl;
+		return result;
 	}
 	else
 	{
-		std::cout << "parallelAdd() Rank=" << rank << " numRowsPerProcess: " << numRowsPerProcess << std::endl;
-		std::cout << "parallelAdd() Rank=" << rank << " numRowsPerProcessM2: " << numRowsPerProcessM2 << std::endl;
+		//std::cout << "parallelAdd() Rank=" << rank << " numRowsPerProcess: " << numRowsPerProcess << std::endl;
+		//std::cout << "parallelAdd() Rank=" << rank << " numRowsPerProcessM2: " << numRowsPerProcessM2 << std::endl;
 		int m1Size, m2Size;
 		MPI_Recv(&m1Size, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
 		MPI_Recv(&m2Size, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
-		std::cout << "parallelAdd() Rank=" << rank << " m1Size: " << m1Size << " m2Size: " << m2Size << std::endl;
+		//std::cout << "parallelAdd() Rank=" << rank << " m1Size: " << m1Size << " m2Size: " << m2Size << std::endl;
 		std::vector<T> m1SubMatrixVec(m1Size), m2SubMatrixVec(m2Size);
 		MPI_Recv(&m1SubMatrixVec[0], m1Size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
 		MPI_Recv(&m2SubMatrixVec[0], m2Size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
@@ -344,10 +345,11 @@ void parallelAdd(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 		MPI_Send(&size, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);
 		MPI_Send(&partialResultVec[0], size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD);
 	}
+	return SparseMatrix<T>();
 }
 
 template <class T>
-void parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2)
+SparseMatrix<T> parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2)
 {
 	const int tag = 0;
 	MPI_Status status;
@@ -388,16 +390,16 @@ void parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2
 	{
 		// int offset = (m1RowCount % size) + (m1RowCount / size);
 		//std::cout << "m1RowCount: " << m1RowCount << " m1ColCount: " << m1ColCount << " m2RowCount: " << m2RowCount << " m2ColCount: " << m2ColCount << std::endl;
-		std::cout << "parallelMult() Rank=" << rank << " numRowsPerProcess: " << numRowsPerProcess << std::endl;
+		//std::cout << "parallelMult() Rank=" << rank << " numRowsPerProcess: " << numRowsPerProcess << std::endl;
 		//std::cout << "matrix m1: \n" << m1 << std::endl;
 		//std::cout << "matrix m2: \n" << m2 << std::endl;
 		result = SparseMatrix<T>(m1.getRowCount(), m2.getColumnCount());
 		std::vector<T> resultAsVec = result.toVector();
 		//std::cout << "resultAsVec: \n";
-		for (int k = 0; k < resultAsVec.size(); k++)
-		{
-			std::cout << resultAsVec[k] << ",";
-		}
+		//for (int k = 0; k < resultAsVec.size(); k++)
+		//{
+		//	std::cout << resultAsVec[k] << ",";
+		//}
 		std::vector<T> m2AsVec = m2.toVector();
 		// Send rest of matrix, then calculate
 		int numRowsToSend, uniqueRowIdx = numRowsPerProcess;
@@ -468,16 +470,17 @@ void parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2
 		}
 		*/
 		result.fromVector(resultAsVec);
-		std::cout << "SparseMatrix parallelMult() Finished! m1: \n" << m1 << "m2: \n" << m2 << " m1 * m2: \n" << result << std::endl;
+		//std::cout << "SparseMatrix parallelMult() Finished! m1: \n" << m1 << "m2: \n" << m2 << " m1 * m2: \n" << result << std::endl;
+		return result;
 	}
 	else
 	{
-		std::cout << "parallelMult() Rank=" << rank << " numRowsPerProcess: " << numRowsPerProcess << std::endl;
+		//std::cout << "parallelMult() Rank=" << rank << " numRowsPerProcess: " << numRowsPerProcess << std::endl;
 
 		int m1Size, m2Size;
 		MPI_Recv(&m1Size, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
 		MPI_Recv(&m2Size, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
-		std::cout << "parallelMult() Rank=" << rank << " m1Size: " << m1Size << " m2Size: " << m2Size << std::endl;
+		//std::cout << "parallelMult() Rank=" << rank << " m1Size: " << m1Size << " m2Size: " << m2Size << std::endl;
 		std::vector<T> m1SubMatrixVec(m1Size), m2SubMatrixVec(m2Size);
 		MPI_Recv(&m1SubMatrixVec[0], m1Size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
 		MPI_Recv(&m2SubMatrixVec[0], m2Size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
@@ -490,10 +493,47 @@ void parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2
 		MPI_Send(&size, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);
 		MPI_Send(&partialResultVec[0], size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD);
 	}
+	return SparseMatrix<T>();
 }
 
 template <class T>
-void conjugateGradient(SparseMatrix<T> A, SparseMatrix<T> b, SparseMatrix<T> x)
+void conjugateGradient(int rank, int size, SparseMatrix<T> & A, SparseMatrix<T> & b, SparseMatrix<T> & x)
 {
-	SparseMatrix<T> r = 
+	SparseMatrix<T> r = parallelAdd(rank, size, b, (-1 * parallelMult(rank, size, A, x)));
+	SparseMatrix<T> p = r;
+	SparseMatrix<T> rsold = parallelMult(rank, size, transpose(r), r);
+	T rsoldT = rsold.getFirstVal();
+	if (rank == 0)
+	{
+		std::cout << "r and p: \n" << r << std::endl;
+		std::cout << "rsold: \n" << rsold << std::endl;
+		std::cout << "rsoldT: " << rsoldT << std::endl;
+	}
+	const int maxIters = 10;
+	for (int i = 0; i < maxIters; i++)
+	{
+		SparseMatrix<T> Ap = parallelMult(rank, size, A, p);
+		T alpha = rsoldT / (parallelMult(rank, size, transpose(p), Ap)).getFirstVal();
+		//SparseMatrix<T> alphaSm(1, 1, 0);
+		//alphaSm.insertValue(0, 0, rsoldT);
+		// TODO maybe just let rank 0 multiply a scalar by a matrix. instead of doing it in parallel?
+		//std::cout << "iter: " << i << " Alpha * p: \n" << alpha * p << std::endl;
+		x = parallelAdd(rank, size, x, alpha * p);
+		r = parallelAdd(rank, size, r, -1 * (alpha * Ap));
+		SparseMatrix<T> rsnew = parallelMult(rank, size, transpose(r), r);
+		T rsnewT = rsnew.getFirstVal();
+		p = parallelAdd(rank, size, r, (rsnewT / rsoldT) * p);
+		if (rank == 0)
+		{
+			std::cout << "iter: " << i << " Ap: \n" << Ap << std::endl;
+			std::cout << "iter: " << i << " alpha: \n" << alpha << std::endl;
+			std::cout << "iter: " << i << " x: \n" << x << std::endl;
+			std::cout << "iter: " << i << " r: \n" << r << std::endl;
+			std::cout << "iter: " << i << " rsnew: \n" << rsnew << std::endl;
+		}
+	}
+	if (rank == 0)
+	{
+		std::cout << "conjugateGradient() finished, x is: \n" << x << std::endl;
+	}
 }

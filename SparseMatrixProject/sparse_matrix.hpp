@@ -64,6 +64,8 @@ public:
 	SparseMatrix<T> add(SparseMatrix<T> & m1);
 	SparseMatrix<T> sub(SparseMatrix<T> & m1);
     void makeKdiagonal(int k, double prob = 0.1);
+	SparseMatrix<T> operator*(const double val);
+	T getFirstVal();
 	friend std::ostream& operator<< <>(std::ostream& stream, const SparseMatrix<T>& matrix);
 	friend SparseMatrix<T> transpose <>(SparseMatrix<T>& matrix);
 	friend bool isValidToMultiply <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
@@ -650,6 +652,33 @@ void SparseMatrix<T>::makeKdiagonal(int k, double prob)
 		}
 	}
     */
+}
+template <class T>
+SparseMatrix<T> SparseMatrix<T>::operator*(const double val)
+{
+	SparseMatrix<T> result(rowCount, columnCount, 0);
+	for (typename std::multimap<int, std::pair<int, T> >::const_iterator it = data.begin(); it != data.end(); it++)
+	{
+		result.insertValue(it->first, it->second.first, it->second.second * val);
+	}
+	return result;
+}
+
+// Define reverse direction
+template <class T>
+inline SparseMatrix<T> operator*(const double val, SparseMatrix<T> m)
+{
+	return m * val;
+}
+
+template <class T>
+T SparseMatrix<T>::getFirstVal()
+{
+	if (data.empty())
+	{
+		return (T)0;
+	}
+	return data.begin()->second.second;
 }
 /*
 template <class T>
