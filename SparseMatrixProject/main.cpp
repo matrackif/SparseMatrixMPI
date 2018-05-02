@@ -26,7 +26,17 @@ int main(int argc, char **argv)
     double startPmultSparse, endPmultSparse, startPaddSparse, endPaddSparse, startSaddSparse, endSaddSparse, startSmultSparse, endSmultSparse;
 	if (rank == 0)
 	{
-		
+		sm = SparseMatrix<double>("../../bcsstk05.mtx");
+		SparseMatrix<double> randVec(sm.getColumnCount(), 1);
+		randVec.fillRandomly();
+		std::cout << "randVec: \n" << randVec << std::endl;
+		std::cout << "RowCount: " << randVec.getRowCount() << " ColumnCount: " << randVec.getColumnCount()
+			<< " NonZeroCount: " << randVec.getNumNonZeroElements() << std::endl;
+		SparseMatrix<double> randVecTransposed = transpose(randVec);
+		std::cout << "randVecTransposed: \n" << randVecTransposed << std::endl;
+		std::cout << "RowCount: " << randVecTransposed.getRowCount() << " ColumnCount: " << randVecTransposed.getColumnCount()
+			<< " NonZeroCount: " << randVecTransposed.getNumNonZeroElements() << std::endl;
+		/*
 		sm = SparseMatrix<double>("../../test1.txt");
 		sm2 = SparseMatrix<double>("../../test2.txt");
 		sm3 = SparseMatrix<double>("../../bcsstk05.mtx");
@@ -80,9 +90,9 @@ int main(int argc, char **argv)
         startSaddSparse = MPI_Wtime();
         sm3.add(sm3);
         endSaddSparse = MPI_Wtime();
-
+		*/
 	}
-
+	/*
 	startP = MPI_Wtime();
 	parallelMult(rank, size, m, m);
 	endP = MPI_Wtime();
@@ -98,7 +108,7 @@ int main(int argc, char **argv)
 	startPaddSparse = MPI_Wtime();
     parallelAdd(rank, size, sm3, sm3);
 	endPaddSparse = MPI_Wtime();
-
+	
 	if (rank == 0)
 	{
 		std::cout << "Sequential mult time: " << endS - startS << "s" << std::endl;
@@ -111,7 +121,7 @@ int main(int argc, char **argv)
 		std::cout << "Sparse sequential add time: " << endSaddSparse - startSaddSparse << "s" << std::endl;
 		std::cout << "Sparse parallel add time: " << endPaddSparse - startPaddSparse << "s" << std::endl;
 	}
-	
+	*/
 
 	MPI_Finalize();
 }

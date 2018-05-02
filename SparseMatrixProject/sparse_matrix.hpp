@@ -445,9 +445,14 @@ void SparseMatrix<T>::fillRandomly(const int min, const int max, const double pr
 	{
 		for (int j = 0; j < columnCount; j++)
 		{
-			T randNum = (T)(min + (rand() % static_cast<int>(max - min + 1)));
-			randNum = (randNum == 0.0) ? 1.0 : randNum;
-			(*this).insertValue(i, j, randNum);
+			int percentChance = (int)(1 + rand() % static_cast<int>(100));
+			//std::cout << "Rand: " << percentChance << std::endl;
+			if ((probability * 100) >= percentChance)
+			{
+				T randNum = (T)(min + (rand() % static_cast<int>(max - min + 1)));
+				randNum = (randNum == 0.0) ? 1.0 : randNum;
+				(*this).insertValue(i, j, randNum);
+			}
 		}
 	}
 
@@ -663,16 +668,12 @@ std::ostream& operator<< (std::ostream& stream, const SparseMatrix<T>& matrix)
 template <class T>
 SparseMatrix<T> transpose(SparseMatrix<T>& matrix)
 {
-	int n = matrix.columnCount;
-	SparseMatrix<T> matrixT(n, n);
-	for (int i = 0; i < n; i++)
+	SparseMatrix<T> ret(matrix.columnCount, matrix.rowCount, 0);
+	for (typename std::multimap<int, std::pair<int, T> >::const_iterator it = matrix.data.begin(); it != matrix.data.end(); it++)
 	{
-		for (int j = 0; j < n; j++)
-		{
-			matrixT(i, j) = matrix(j, i);
-		}
+		ret.insertValue(it->second.first, it->first, it->second.second);
 	}
-	return matrixT;
+	return ret;
 }
 
 template <class T>
