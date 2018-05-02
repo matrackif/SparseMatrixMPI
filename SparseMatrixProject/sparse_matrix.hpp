@@ -54,7 +54,7 @@ public:
 	//SparseMatrix<T> & getSubMatrix(int startRow, int endRow, int startCol, int endCol);
 	//void copyValues(SparseMatrix<T> & from, int startRow, int endRow);
 	//void copyValues(SparseMatrix<T> & from, int startRow, int endRow, int startCol, int endCol);
-	void fillRandomly(const int min = 0, const int max = 5);
+	void fillRandomly(const int min = 0, const int max = 5, const double probability = 0.1);
 	//void fillRandomlyLowerTriangular(const int min = 0, const int max = 5);
 	//void makePositiveDefinite();
 	std::vector<T> toVector();
@@ -439,19 +439,18 @@ void SparseMatrix<T>::copyValues(SparseMatrix<T> & from, int startRow, int endRo
 */
 
 template <class T>
-void SparseMatrix<T>::fillRandomly(const int min, const int max)
+void SparseMatrix<T>::fillRandomly(const int min, const int max, const double probability)
 {
-	/*
 	for (int i = 0; i < rowCount; i++)
 	{
 		for (int j = 0; j < columnCount; j++)
 		{
 			T randNum = (T)(min + (rand() % static_cast<int>(max - min + 1)));
 			randNum = (randNum == 0.0) ? 1.0 : randNum;
-			(*this)(i, j) = randNum;
+			(*this).insertValue(i, j, randNum);
 		}
 	}
-	*/
+
 }
 template <class T>
 std::vector<T> SparseMatrix<T>::toVector()

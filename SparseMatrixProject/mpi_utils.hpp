@@ -491,3 +491,9 @@ void parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2
 		MPI_Send(&partialResultVec[0], size, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD);
 	}
 }
+
+template <class T>
+void conjugateGradient(SparseMatrix<T> A, SparseMatrix<T> b, SparseMatrix<T> x)
+{
+
+}
