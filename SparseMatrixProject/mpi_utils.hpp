@@ -495,5 +495,5 @@ void parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMatrix<T> & m2
 template <class T>
 void conjugateGradient(SparseMatrix<T> A, SparseMatrix<T> b, SparseMatrix<T> x)
 {
-
+	SparseMatrix<T> r = 
 }

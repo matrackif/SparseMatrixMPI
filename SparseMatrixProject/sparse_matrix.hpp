@@ -62,6 +62,7 @@ public:
 	std::vector<std::vector<T> > getUniqueRows();
 	SparseMatrix<T> multiply(SparseMatrix<T> & m1);
 	SparseMatrix<T> add(SparseMatrix<T> & m1);
+	SparseMatrix<T> sub(SparseMatrix<T> & m1);
     void makeKdiagonal(int k, double prob = 0.1);
 	friend std::ostream& operator<< <>(std::ostream& stream, const SparseMatrix<T>& matrix);
 	friend SparseMatrix<T> transpose <>(SparseMatrix<T>& matrix);
@@ -232,7 +233,7 @@ void SparseMatrix<T>::addToValue(int row, int col, T val)
 			return;
 		}
 	}
-	// row can col does not exist yet, add it
+	// row and col does not exist yet, add it
 	data.insert(std::pair<int, std::pair<int, T> >(row, std::make_pair(col, val)));
 	nonZeroCount++;
 }
@@ -514,7 +515,7 @@ template <class T>
 SparseMatrix<T> SparseMatrix<T>::multiply(SparseMatrix<T> & m)
 {
 	int nCols = m.getColumnCount();
-	SparseMatrix<T> result(this->rowCount, nCols);
+	SparseMatrix<T> result(this->rowCount, nCols, 0);
 	if (!isValidToMultiply(*this, m))
 	{
 		return result;
@@ -536,7 +537,7 @@ SparseMatrix<T> SparseMatrix<T>::multiply(SparseMatrix<T> & m)
 template <class T>
 SparseMatrix<T> SparseMatrix<T>::add(SparseMatrix<T> & m)
 {
-	SparseMatrix<T> result(rowCount, columnCount);
+	SparseMatrix<T> result(rowCount, columnCount, 0);
 	if (!isValidToAdd(*this, m))
 	{
 		return result;
@@ -561,6 +562,39 @@ SparseMatrix<T> SparseMatrix<T>::add(SparseMatrix<T> & m)
 		if (!getVal(it->first, it->second.first, val))
 		{
 			result.addToValue(it->first, it->second.first, it->second.second);
+		}
+	}
+	return result;
+}
+
+template<class T>
+SparseMatrix<T> SparseMatrix<T>::sub(SparseMatrix<T> & m)
+{
+	SparseMatrix<T> result(rowCount, columnCount, 0);
+	if (!isValidToAdd(*this, m))
+	{
+		return result;
+	}
+
+	for (typename std::multimap<int, std::pair<int, T> >::const_iterator it = data.begin(); it != data.end(); it++)
+	{
+		T val;
+		if (m.getVal(it->first, it->second.first, val))
+		{
+			result.addToValue(it->first, it->second.first, it->second.second - val);
+		}
+		else
+		{
+			result.addToValue(it->first, it->second.first, it->second.second);
+		}
+	}
+
+	for (typename std::multimap<int, std::pair<int, T> >::const_iterator it = m.data.begin(); it != m.data.end(); it++)
+	{
+		T val;
+		if (!getVal(it->first, it->second.first, val))
+		{
+			result.addToValue(it->first, it->second.first, -it->second.second);
 		}
 	}
 	return result;

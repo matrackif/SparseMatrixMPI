@@ -36,6 +36,12 @@ int main(int argc, char **argv)
 		std::cout << "randVecTransposed: \n" << randVecTransposed << std::endl;
 		std::cout << "RowCount: " << randVecTransposed.getRowCount() << " ColumnCount: " << randVecTransposed.getColumnCount()
 			<< " NonZeroCount: " << randVecTransposed.getNumNonZeroElements() << std::endl;
+		SparseMatrix<double> randVec2(sm.getColumnCount(), 1);
+		randVec2.fillRandomly(1, 1, 1);
+		SparseMatrix<double> subRandVec = randVec.sub(randVec2);
+		std::cout << "subRandVec: \n" << subRandVec << std::endl;
+		std::cout << "RowCount: " << subRandVec.getRowCount() << " ColumnCount: " << subRandVec.getColumnCount()
+			<< " NonZeroCount: " << subRandVec.getNumNonZeroElements() << std::endl;
 		/*
 		sm = SparseMatrix<double>("../../test1.txt");
 		sm2 = SparseMatrix<double>("../../test2.txt");
