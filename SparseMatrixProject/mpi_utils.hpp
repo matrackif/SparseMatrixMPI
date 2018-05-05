@@ -509,7 +509,8 @@ void conjugateGradient(int rank, int size, SparseMatrix<T> & A, SparseMatrix<T> 
 		std::cout << "rsold: \n" << rsold << std::endl;
 		std::cout << "rsoldT: " << rsoldT << std::endl;
 	}
-	const int maxIters = 10;
+	int maxIters = b.getRowCount();
+	MPI_Bcast(&maxIters, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	for (int i = 0; i < maxIters; i++)
 	{
 		SparseMatrix<T> Ap = parallelMult(rank, size, A, p);
@@ -523,6 +524,7 @@ void conjugateGradient(int rank, int size, SparseMatrix<T> & A, SparseMatrix<T> 
 		SparseMatrix<T> rsnew = parallelMult(rank, size, transpose(r), r);
 		T rsnewT = rsnew.getFirstVal();
 		p = parallelAdd(rank, size, r, (rsnewT / rsoldT) * p);
+		rsoldT = rsnewT;
 		if (rank == 0)
 		{
 			std::cout << "iter: " << i << " Ap: \n" << Ap << std::endl;

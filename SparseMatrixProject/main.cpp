@@ -33,10 +33,11 @@ int main(int argc, char **argv)
 		testA.insertValue(1, 1, 1);
 		testA.insertValue(2, 0, 1);
 		testA.insertValue(2, 1, 1);
-		testA.insertValue(2, 2, 2);
-		testB.insertValue(0, 0, 1);
-		testB.insertValue(1, 0, 2);
-		testB.insertValue(2, 0, 3);
+		testA.insertValue(2, 2, 1);
+		testA = testA.multiply(transpose(testA));
+		testB.insertValue(0, 0, 3);
+		testB.insertValue(1, 0, 5);
+		testB.insertValue(2, 0, 6);
 		std::cout << "testA: \n" << testA << std::endl;
 		std::cout << "RowCount: " << testA.getRowCount() << " ColumnCount: " << testA.getColumnCount()
 			<< " NonZeroCount: " << testA.getNumNonZeroElements() << std::endl;
