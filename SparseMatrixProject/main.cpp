@@ -34,7 +34,8 @@ int main(int argc, char **argv)
 		testA.insertValue(2, 0, 1);
 		testA.insertValue(2, 1, 1);
 		testA.insertValue(2, 2, 1);
-		testA = testA.multiply(transpose(testA));
+		SparseMatrix<double> testATransposed = transpose(testA);
+		testA = testA.multiply(testATransposed);
 		testB.insertValue(0, 0, 3);
 		testB.insertValue(1, 0, 5);
 		testB.insertValue(2, 0, 6);

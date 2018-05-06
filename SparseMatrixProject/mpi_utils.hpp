@@ -499,9 +499,14 @@ SparseMatrix<T> parallelMult(int rank, int size, SparseMatrix<T> & m1, SparseMat
 template <class T>
 void conjugateGradient(int rank, int size, SparseMatrix<T> & A, SparseMatrix<T> & b, SparseMatrix<T> & x)
 {
-	SparseMatrix<T> r = parallelAdd(rank, size, b, (-1 * parallelMult(rank, size, A, x)));
+	int maxIters = b.getRowCount();
+	MPI_Bcast(&maxIters, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+	SparseMatrix<T> NegativeAx = -1 * parallelMult(rank, size, A, x);
+	SparseMatrix<T> r = parallelAdd(rank, size, b, NegativeAx);
 	SparseMatrix<T> p = r;
-	SparseMatrix<T> rsold = parallelMult(rank, size, transpose(r), r);
+	SparseMatrix<T> rTransposed = transpose(r);
+	SparseMatrix<T> rsold = parallelMult(rank, size, rTransposed, r);
 	T rsoldT = rsold.getFirstVal();
 	if (rank == 0)
 	{
@@ -509,21 +514,25 @@ void conjugateGradient(int rank, int size, SparseMatrix<T> & A, SparseMatrix<T> 
 		std::cout << "rsold: \n" << rsold << std::endl;
 		std::cout << "rsoldT: " << rsoldT << std::endl;
 	}
-	int maxIters = b.getRowCount();
-	MPI_Bcast(&maxIters, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
 	for (int i = 0; i < maxIters; i++)
 	{
 		SparseMatrix<T> Ap = parallelMult(rank, size, A, p);
-		T alpha = rsoldT / (parallelMult(rank, size, transpose(p), Ap)).getFirstVal();
+		SparseMatrix<T> pTransposed = transpose(p);
+		T alpha = rsoldT / (parallelMult(rank, size, pTransposed, Ap)).getFirstVal();
 		//SparseMatrix<T> alphaSm(1, 1, 0);
 		//alphaSm.insertValue(0, 0, rsoldT);
 		// TODO maybe just let rank 0 multiply a scalar by a matrix. instead of doing it in parallel?
 		//std::cout << "iter: " << i << " Alpha * p: \n" << alpha * p << std::endl;
-		x = parallelAdd(rank, size, x, alpha * p);
-		r = parallelAdd(rank, size, r, -1 * (alpha * Ap));
-		SparseMatrix<T> rsnew = parallelMult(rank, size, transpose(r), r);
+		SparseMatrix<T> alphaP = alpha * p;
+		x = parallelAdd(rank, size, x, alphaP);
+		SparseMatrix<T> negativeAlphaAp = -1 * (alpha * Ap);
+		r = parallelAdd(rank, size, r, negativeAlphaAp);
+		SparseMatrix<T>  newRTransposed = transpose(r);
+		SparseMatrix<T> rsnew = parallelMult(rank, size, newRTransposed, r);
 		T rsnewT = rsnew.getFirstVal();
-		p = parallelAdd(rank, size, r, (rsnewT / rsoldT) * p);
+		SparseMatrix<T> newP = (rsnewT / rsoldT) * p;
+		p = parallelAdd(rank, size, r, newP);
 		rsoldT = rsnewT;
 		if (rank == 0)
 		{
@@ -538,4 +547,5 @@ void conjugateGradient(int rank, int size, SparseMatrix<T> & A, SparseMatrix<T> 
 	{
 		std::cout << "conjugateGradient() finished, x is: \n" << x << std::endl;
 	}
+
 }
