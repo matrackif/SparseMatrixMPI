@@ -100,6 +100,7 @@ SparseMatrix<T>::SparseMatrix(const std::string & mtxFile)
 	std::ifstream file(mtxFile.c_str(), std::ifstream::in);
 	std::string line;
 	bool isHeaderLine = true;
+	nonZeroCount = 0;
 	while (std::getline(file, line))
 	{
 		if (line.empty() || line[0] == '%')
