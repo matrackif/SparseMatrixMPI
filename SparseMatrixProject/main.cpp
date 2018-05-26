@@ -20,11 +20,19 @@ int main(int argc, char **argv)
 	matrix2D<double> matrixL2;
 	matrix2D<double> mtx;
 	SparseMatrix<double> sm, sm2, sm3, smk, randVec, randVec2, testA, testX, testB;
+	SparseMatrix<int> lowerTriangSparse, lowerTriangSparseTransposed, testPosDef;
     matrix2D<double> m;
 	double startP, endP, startS, endS, startSadd, endSadd, startPadd, endPadd;
     double startPmultSparse, endPmultSparse, startPaddSparse, endPaddSparse, startSaddSparse, endSaddSparse, startSmultSparse, endSmultSparse;
 	if (rank == 0)
 	{
+		lowerTriangSparse = SparseMatrix<int>(3, 3);
+		lowerTriangSparse.fillRandomlyLowerTriangular(1, 5, 1);
+		lowerTriangSparseTransposed = transpose(lowerTriangSparse);
+		testPosDef = lowerTriangSparse.multiply(lowerTriangSparseTransposed);
+		std::cout << "lowerTriangSparse: \n" << lowerTriangSparse << std::endl;
+		std::cout << "lowerTriangSparseTransposed: \n" << lowerTriangSparseTransposed << std::endl;
+		std::cout << "testPosDef: \n" << testPosDef << std::endl;
 		testA = SparseMatrix<double>(3, 3, 0);
 		testX = SparseMatrix<double>(3, 1, 0);
 		testB = SparseMatrix<double>(3, 1, 0);
@@ -128,6 +136,22 @@ int main(int argc, char **argv)
 	}
 	//conjugateGradient(rank, size, sm, randVec, randVec2);
 	conjugateGradient(rank, size, testA, testB, testX);
+	/*
+	std::multimap<int, std::pair<int, double> >::iterator it = testX.getIter(5, 5);
+	if(it != testX.data.end())
+		it->second.second = 69;
+	std::cout << "testX after mod:\n" << testX << std::endl;
+	*/
+	incompleteCholeskyDecomp(testPosDef);
+	if (rank == 0)
+	{
+		std::cout << "testPosDef was factorized into matrix L:\n" << testPosDef << std::endl;
+		SparseMatrix<int> factorizedPosDefTransposed = transpose(testPosDef);
+		SparseMatrix<int> multResult = testPosDef.multiply(factorizedPosDefTransposed);
+		std::cout << "L * LT:\n" << multResult << std::endl;
+	}
+	
+
 	/*
 	startP = MPI_Wtime();
 	parallelMult(rank, size, m, m);

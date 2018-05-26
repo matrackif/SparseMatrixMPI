@@ -78,7 +78,7 @@ public:
 	void copyValues(matrix2D<T> & from, int startRow, int endRow);
 	void copyValues(matrix2D<T> & from, int startRow, int endRow, int startCol, int endCol);
 	void fillRandomly(const int min = 0, const int max = 5);
-	void fillRandomlyLowerTriangular(const int min = 0, const int max = 5);
+	void fillRandomlyLowerTriangular(const int min = 1, const int max = 5);
 	void makePositiveDefinite();
 	friend std::ostream& operator<< <>(std::ostream& stream, const matrix2D<T>& matrix);
 	friend matrix2D<T> transpose <>(matrix2D<T>& matrix);

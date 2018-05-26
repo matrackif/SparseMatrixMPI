@@ -49,13 +49,14 @@ public:
 	int getNumElements();
 	int getNumNonZeroElements();
 	bool getVal(int row, int col, T & val);
+	void deleteVal(int row, int col);
 	T & operator()(int row, int col);
 	//SparseMatrix<T> createSubMatrix(int startRow, int endRow, int startCol, int endCol);
 	//SparseMatrix<T> & getSubMatrix(int startRow, int endRow, int startCol, int endCol);
 	//void copyValues(SparseMatrix<T> & from, int startRow, int endRow);
 	//void copyValues(SparseMatrix<T> & from, int startRow, int endRow, int startCol, int endCol);
-	void fillRandomly(const int min = 0, const int max = 5, const double probability = 0.1);
-	//void fillRandomlyLowerTriangular(const int min = 0, const int max = 5);
+	void fillRandomly(const int min = 1, const int max = 5, const double probability = 0.1);
+	void fillRandomlyLowerTriangular(const int min = 1, const int max = 5, const double probability = 0.5);
 	//void makePositiveDefinite();
 	std::vector<T> toVector();
 	void fromVector(std::vector<T> & v);
@@ -66,6 +67,7 @@ public:
     void makeKdiagonal(int k, double prob = 0.1);
 	SparseMatrix<T> operator*(const double val);
 	T getFirstVal();
+	typename std::multimap<int, std::pair<int, T> >::iterator getIter(int row, int col);
 	friend std::ostream& operator<< <>(std::ostream& stream, const SparseMatrix<T>& matrix);
 	friend SparseMatrix<T> transpose <>(SparseMatrix<T>& matrix);
 	friend bool isValidToMultiply <>(SparseMatrix<T> & m1, SparseMatrix<T> & m2);
@@ -206,17 +208,19 @@ void SparseMatrix<T>::insertValue(int row, int col, T val)
 	{
 		return;
 	}
-	T oldVal;
-	if (this->getVal(row, col, oldVal))
+	std::pair<typename std::multimap<int, std::pair<int, T> >::iterator, typename std::multimap<int, std::pair<int, T> >::iterator> r = data.equal_range(row);
+	for (typename std::multimap<int, std::pair<int, T> >::iterator lowIt = r.first; lowIt != r.second; lowIt++)
 	{
-		//oldVal = val;
+		if (lowIt->second.first == col)
+		{
+			lowIt->second.second = val;
+			return;
+		}
 	}
-	else
-	{
-		// row can col does not exist yet, add it
-		data.insert(std::pair<int, std::pair<int, T> >(row, std::make_pair(col, val)));
-		nonZeroCount++;
-	}	
+
+	// row can col does not exist yet, add it
+	data.insert(std::pair<int, std::pair<int, T> >(row, std::make_pair(col, val)));
+	nonZeroCount++;	
 }
 
 template <class T>
@@ -281,10 +285,12 @@ int SparseMatrix<T>::getNumNonZeroElements()
 template <class T>
 bool SparseMatrix<T>::getVal(int row, int col, T & val)
 {
+	/*
 	if (val == 0)
 	{
 		return false;
 	}
+	*/
 	std::pair<typename std::multimap<int, std::pair<int, T> >::iterator, typename std::multimap<int, std::pair<int, T> >::iterator> r = data.equal_range(row);
 	for (typename std::multimap<int, std::pair<int, T> >::iterator lowIt = r.first; lowIt != r.second; lowIt++)
 	{
@@ -295,6 +301,21 @@ bool SparseMatrix<T>::getVal(int row, int col, T & val)
 		}
 	}
 	return false;
+}
+
+template <class T>
+void SparseMatrix<T>::deleteVal(int row, int col)
+{
+	std::pair<typename std::multimap<int, std::pair<int, T> >::iterator, typename std::multimap<int, std::pair<int, T> >::iterator> r = data.equal_range(row);
+	for (typename std::multimap<int, std::pair<int, T> >::iterator lowIt = r.first; lowIt != r.second; lowIt++)
+	{
+		if (lowIt->second.first == col)
+		{
+			data.erase(lowIt);
+			return;
+		}
+	}
+	
 }
 
 template <class T>
@@ -460,6 +481,26 @@ void SparseMatrix<T>::fillRandomly(const int min, const int max, const double pr
 	}
 
 }
+template <class T>
+void SparseMatrix<T>::fillRandomlyLowerTriangular(const int min, const int max, const double probability)
+{
+	srand(time(NULL));
+	for (int i = 0; i < rowCount; i++)
+	{
+		for (int j = 0; j <= i; j++)
+		{
+			int percentChance = (int)(1 + rand() % static_cast<int>(100));
+			//std::cout << "Rand: " << percentChance << std::endl;
+			if ((probability * 100) >= percentChance)
+			{
+				T randNum = (T)(min + (rand() % static_cast<int>(max - min + 1)));
+				randNum = (randNum == 0.0) ? 1.0 : randNum;
+				(*this).insertValue(i, j, randNum);
+			}		
+		}
+	}
+}
+
 template <class T>
 std::vector<T> SparseMatrix<T>::toVector()
 {
@@ -679,6 +720,20 @@ T SparseMatrix<T>::getFirstVal()
 		return (T)0;
 	}
 	return data.begin()->second.second;
+}
+
+template <class T>
+typename std::multimap<int, std::pair<int, T> >::iterator SparseMatrix<T>::getIter(int row, int col)
+{
+	std::pair<typename std::multimap<int, std::pair<int, T> >::iterator, typename std::multimap<int, std::pair<int, T> >::iterator> r = data.equal_range(row);
+	for (typename std::multimap<int, std::pair<int, T> >::iterator it = r.first; it != r.second; it++)
+	{
+		if (it->second.first == col)
+		{
+			return it;
+		}
+	}
+	return data.end();
 }
 /*
 template <class T>

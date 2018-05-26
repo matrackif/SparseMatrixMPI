@@ -508,13 +508,14 @@ void conjugateGradient(int rank, int size, SparseMatrix<T> & A, SparseMatrix<T> 
 	SparseMatrix<T> rTransposed = transpose(r);
 	SparseMatrix<T> rsold = parallelMult(rank, size, rTransposed, r);
 	T rsoldT = rsold.getFirstVal();
+	/*
 	if (rank == 0)
 	{
 		std::cout << "r and p: \n" << r << std::endl;
 		std::cout << "rsold: \n" << rsold << std::endl;
 		std::cout << "rsoldT: " << rsoldT << std::endl;
 	}
-
+	*/
 	for (int i = 0; i < maxIters; i++)
 	{
 		SparseMatrix<T> Ap = parallelMult(rank, size, A, p);
@@ -534,6 +535,7 @@ void conjugateGradient(int rank, int size, SparseMatrix<T> & A, SparseMatrix<T> 
 		SparseMatrix<T> newP = (rsnewT / rsoldT) * p;
 		p = parallelAdd(rank, size, r, newP);
 		rsoldT = rsnewT;
+		/*
 		if (rank == 0)
 		{
 			std::cout << "iter: " << i << " Ap: \n" << Ap << std::endl;
@@ -542,10 +544,64 @@ void conjugateGradient(int rank, int size, SparseMatrix<T> & A, SparseMatrix<T> 
 			std::cout << "iter: " << i << " r: \n" << r << std::endl;
 			std::cout << "iter: " << i << " rsnew: \n" << rsnew << std::endl;
 		}
+		*/
 	}
 	if (rank == 0)
 	{
 		std::cout << "conjugateGradient() finished, x is: \n" << x << std::endl;
 	}
 
+}
+
+template <class T>
+void incompleteCholeskyDecomp(SparseMatrix<T> & a)
+{
+	int n = a.getRowCount(); // assume square matrix
+	MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	for (int k = 0; k < n; k++)
+	{
+		typename std::multimap<int, std::pair<int, T> >::iterator itKK = a.getIter(k, k);
+		if (itKK != a.data.end())
+		{
+			itKK->second.second = sqrt(itKK->second.second);
+			for (int i = k + 1; i < n; i++)
+			{
+				typename std::multimap<int, std::pair<int, T> >::iterator itIK = a.getIter(i, k);
+				if (itIK != a.data.end())
+				{
+					itIK->second.second = itIK->second.second / itKK->second.second;
+				}
+			}
+		}
+
+		for (int j = k + 1; j < n; j++)
+		{
+			for (int i = j; i < n; i++)
+			{
+				typename std::multimap<int, std::pair<int, T> >::iterator itIJ = a.getIter(i, j);
+				if (itIJ != a.data.end())
+				{
+					typename std::multimap<int, std::pair<int, T> >::iterator itIK = a.getIter(i, k);
+					typename std::multimap<int, std::pair<int, T> >::iterator itJK = a.getIter(j, k);
+					if (itIK == a.data.end() || itJK == a.data.end())
+					{
+						a.data.erase(itIJ);
+					}
+					else
+					{
+						itIJ->second.second -= itIK->second.second * itJK->second.second;
+					}
+				}
+			}
+		}
+		
+	}
+
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = i + 1; j < n; j++)
+		{
+			a.deleteVal(i, j);
+		}
+	}
 }
