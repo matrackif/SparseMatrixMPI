@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "matrix.hpp"
 #include "mpi.h"
 
@@ -8,7 +8,29 @@ void concat(std::vector<T>& a, const std::vector<T>& b)
 	a.reserve(a.size() + b.size());
 	a.insert(a.end(), b.begin(), b.end());
 }
+template <typename T>
+int getNumElementsInRange(const std::vector<T> & v, const int & startRow, const int & endRow, int & startIdx)
+{
+	int ret = 0;
+	int vecSize = v.size();
+	for (int i = 3; i < vecSize; i += 3)
+	{
+		if (v[i] >= startRow && v[i] < endRow)
+		{
+			if (v[i] == startRow)
+			{
+				startIdx = i;
+			}
+			ret += 3;
+		}
+		else if (v[i] >= endRow)
+		{
+			break;
+		}
 
+	}
+	return ret;
+}
 // TODO use block striped decomposition algo http://www.hpcc.unn.ru/mskurs/ENG/PPT/pp08.pdf
 template <class T>
 void parallelMult(int rank, int size, matrix2D<T> & m1, matrix2D<T> & m2)
@@ -546,11 +568,12 @@ void conjugateGradient(int rank, int size, SparseMatrix<T> & A, SparseMatrix<T> 
 		}
 		*/
 	}
+	/*
 	if (rank == 0)
 	{
 		std::cout << "conjugateGradient() finished, x is: \n" << x << std::endl;
 	}
-
+	*/
 }
 
 template <class T>
@@ -604,4 +627,74 @@ void incompleteCholeskyDecomp(SparseMatrix<T> & a)
 			a.deleteVal(i, j);
 		}
 	}
+}
+/*
+for k = 1, . . . , n do
+	for i = k + 1, . . . , n do
+		aik = aik /akk
+		for j = k + 1, . . . , n do
+			aij = aij − aik akj
+		end for
+	end for
+end for
+*/
+
+template <class T>
+void parallelILU(int rank, int size, SparseMatrix<T> & a)
+{
+	int n = a.getRowCount(), vecSize = 0; // assume square matrix
+	MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	std::vector<T> asVec;
+	
+	if(rank == 0)
+	{
+		asVec = a.toVector();
+		vecSize = asVec.size();
+		/*
+		for (auto & lol : asVec)
+		{
+			std::cout << lol << ", ";
+		}
+		std::cout << std::endl;
+		*/
+	}
+	MPI_Bcast(&vecSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	if(rank != 0)
+	{
+		asVec.resize(vecSize);
+	}
+	//std::cout << "Rank: " << rank << " sees vecSize as: " << vecSize << "but vec.size() as: " << asVec.size() << std::endl;
+	MPI_Bcast(&asVec[0], vecSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	
+	int minRowsPerProcess = n / size;
+	int rowRemainder = n % size;
+	int numRowsPerProcess = rank < (rowRemainder) ? minRowsPerProcess + 1 : minRowsPerProcess;
+	int startRow = (rank >= rowRemainder) ? ((rowRemainder * (minRowsPerProcess + 1)) + ((rank - rowRemainder) *  minRowsPerProcess)) : (numRowsPerProcess * rank);
+	int endRow = startRow + numRowsPerProcess;
+	std::cout << "Rank: " << rank << " startRow: " << startRow << " endRow: " << endRow << std::endl;
+	
+	/*
+	for (int k = 0; k < n; k++)
+	{
+		MPI_Bcast(&asVec[0], vecSize, MPI_DOUBLE, rank, MPI_COMM_WORLD);
+		SparseMatrix<T> localCopy(asVec);
+		startRow = startRow < k + 1 ? k + 1 : startRow;
+		for (int i = startRow; i < endRow; i++)
+		{
+			typename std::multimap<int, std::pair<int, T> >::iterator itKK = localCopy.getIter(k, k);
+			if (itKK != localCopy.data.end())
+			{
+				typename std::multimap<int, std::pair<int, T> >::iterator itIK = localCopy.getIter(i, k);
+				if (itIK != localCopy.data.end())
+				{
+					itIK->second.second /= itKK->second.second;
+					for (int j = startRow; j < endRow; j++)
+					{
+
+					}
+				}
+			}		
+		}
+	}
+	*/
 }

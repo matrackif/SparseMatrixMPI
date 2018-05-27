@@ -16,12 +16,12 @@ int main(int argc, char **argv)
 	int rank, size;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	SparseMatrix<double> testA, testX, testB;
-	SparseMatrix<int> lowerTriangSparse, lowerTriangSparseTransposed, testPosDef;
+	SparseMatrix<double> testA, testX, testB, matrixFromFile;
+	SparseMatrix<double> lowerTriangSparse, lowerTriangSparseTransposed, testPosDef;
 	if (rank == 0)
 	{
-		lowerTriangSparse = SparseMatrix<int>(3, 3);
-		lowerTriangSparse.fillRandomlyLowerTriangular(1, 5, 1);
+		lowerTriangSparse = SparseMatrix<double>(7, 7);
+		lowerTriangSparse.fillRandomlyLowerTriangular(1, 3, 0.5);
 		lowerTriangSparseTransposed = transpose(lowerTriangSparse);
 		testPosDef = lowerTriangSparse.multiply(lowerTriangSparseTransposed);
 		std::cout << "lowerTriangSparse: \n" << lowerTriangSparse << std::endl;
@@ -50,17 +50,25 @@ int main(int argc, char **argv)
 		std::cout << "testB: \n" << testB << std::endl;
 		std::cout << "RowCount: " << testB.getRowCount() << " ColumnCount: " << testB.getColumnCount()
 			<< " NonZeroCount: " << testB.getNumNonZeroElements() << std::endl;
-		
+		/*
+		matrixFromFile = SparseMatrix<double>("../../bcsstk05.mtx");
+		std::cout << "Matrix from file before decomp:\n" << matrixFromFile << "\n";
+		incompleteCholeskyDecomp(matrixFromFile);
+		std::cout << "Matrix from file after decomp:\n" << matrixFromFile << "\n";
+		*/
 	}
 	conjugateGradient(rank, size, testA, testB, testX);
-	incompleteCholeskyDecomp(testPosDef);
+	std::cout << "Solution X found for matrix testA:\n" << testX << std::endl;
+	//incompleteCholeskyDecomp(testPosDef);
+	parallelILU(rank, size, testPosDef);
+	/*
 	if (rank == 0)
 	{
 		std::cout << "testPosDef was factorized into matrix L:\n" << testPosDef << std::endl;
-		SparseMatrix<int> factorizedPosDefTransposed = transpose(testPosDef);
-		SparseMatrix<int> multResult = testPosDef.multiply(factorizedPosDefTransposed);
+		SparseMatrix<double> factorizedPosDefTransposed = transpose(testPosDef);
+		SparseMatrix<double> multResult = testPosDef.multiply(factorizedPosDefTransposed);
 		std::cout << "L * LT:\n" << multResult << std::endl;
 	}
-
+	*/
 	MPI_Finalize();
 }
