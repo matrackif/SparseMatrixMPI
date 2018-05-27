@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 	if (rank == 0)
 	{
 		lowerTriangSparse = SparseMatrix<double>(7, 7);
-		lowerTriangSparse.fillRandomlyLowerTriangular(1, 3, 0.5);
+		lowerTriangSparse.fillRandomlyLowerTriangular(1, 3, 1);
 		lowerTriangSparseTransposed = transpose(lowerTriangSparse);
 		testPosDef = lowerTriangSparse.multiply(lowerTriangSparseTransposed);
 		std::cout << "lowerTriangSparse: \n" << lowerTriangSparse << std::endl;
@@ -58,17 +58,21 @@ int main(int argc, char **argv)
 		*/
 	}
 	conjugateGradient(rank, size, testA, testB, testX);
-	std::cout << "Solution X found for matrix testA:\n" << testX << std::endl;
+	
 	//incompleteCholeskyDecomp(testPosDef);
 	parallelILU(rank, size, testPosDef);
-	/*
+	
 	if (rank == 0)
 	{
+		/*
 		std::cout << "testPosDef was factorized into matrix L:\n" << testPosDef << std::endl;
 		SparseMatrix<double> factorizedPosDefTransposed = transpose(testPosDef);
 		SparseMatrix<double> multResult = testPosDef.multiply(factorizedPosDefTransposed);
 		std::cout << "L * LT:\n" << multResult << std::endl;
+		*/
+		std::cout << "Solution X found for matrix testA:\n" << testX << std::endl;
+		std::cout << "parallelILU() decomposition found:\n" << testPosDef << std::endl;
 	}
-	*/
+	
 	MPI_Finalize();
 }

@@ -13,13 +13,15 @@ int getNumElementsInRange(const std::vector<T> & v, const int & startRow, const 
 {
 	int ret = 0;
 	int vecSize = v.size();
+	bool assignedStartIdx = false;
 	for (int i = 3; i < vecSize; i += 3)
 	{
 		if (v[i] >= startRow && v[i] < endRow)
 		{
-			if (v[i] == startRow)
+			if (!assignedStartIdx)
 			{
 				startIdx = i;
+				assignedStartIdx = true;
 			}
 			ret += 3;
 		}
@@ -645,18 +647,11 @@ void parallelILU(int rank, int size, SparseMatrix<T> & a)
 	int n = a.getRowCount(), vecSize = 0; // assume square matrix
 	MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	std::vector<T> asVec;
-	
+	SparseMatrix<T> ret;
 	if(rank == 0)
 	{
 		asVec = a.toVector();
 		vecSize = asVec.size();
-		/*
-		for (auto & lol : asVec)
-		{
-			std::cout << lol << ", ";
-		}
-		std::cout << std::endl;
-		*/
 	}
 	MPI_Bcast(&vecSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	if(rank != 0)
@@ -671,30 +666,71 @@ void parallelILU(int rank, int size, SparseMatrix<T> & a)
 	int numRowsPerProcess = rank < (rowRemainder) ? minRowsPerProcess + 1 : minRowsPerProcess;
 	int startRow = (rank >= rowRemainder) ? ((rowRemainder * (minRowsPerProcess + 1)) + ((rank - rowRemainder) *  minRowsPerProcess)) : (numRowsPerProcess * rank);
 	int endRow = startRow + numRowsPerProcess;
-	std::cout << "Rank: " << rank << " startRow: " << startRow << " endRow: " << endRow << std::endl;
-	
+	//std::cout << "Rank: " << rank << " startRow: " << startRow << " endRow: " << endRow << std::endl;
 	/*
+	for (auto & lol : asVec)
+	{
+		std::cout << lol << ", ";
+	}
+	std::cout << std::endl;
+	*/
+	
 	for (int k = 0; k < n; k++)
 	{
-		MPI_Bcast(&asVec[0], vecSize, MPI_DOUBLE, rank, MPI_COMM_WORLD);
 		SparseMatrix<T> localCopy(asVec);
-		startRow = startRow < k + 1 ? k + 1 : startRow;
-		for (int i = startRow; i < endRow; i++)
+		int startIdx = -1;
+		int numElements = getNumElementsInRange(asVec, startRow, endRow, startIdx);
+		if (startIdx > 0 && numElements > 0)
 		{
-			typename std::multimap<int, std::pair<int, T> >::iterator itKK = localCopy.getIter(k, k);
-			if (itKK != localCopy.data.end())
+			startRow = startRow < k + 1 ? k + 1 : startRow;
+			for (int i = startRow; i < endRow; i++)
 			{
+				typename std::multimap<int, std::pair<int, T> >::iterator itKK = localCopy.getIter(k, k);
+				//if (itKK != localCopy.data.end())
+				//{
 				typename std::multimap<int, std::pair<int, T> >::iterator itIK = localCopy.getIter(i, k);
 				if (itIK != localCopy.data.end())
 				{
 					itIK->second.second /= itKK->second.second;
-					for (int j = startRow; j < endRow; j++)
+					for (int j = k + 1; j < n; j++)
 					{
-
+						typename std::multimap<int, std::pair<int, T> >::iterator itKJ = localCopy.getIter(k, j);
+						if (itKJ != localCopy.data.end())
+						{
+							typename std::multimap<int, std::pair<int, T> >::iterator itIJ = localCopy.getIter(i, j);
+							if (itIJ == localCopy.data.end())
+							{
+								// insertValue checks again
+								localCopy.data.insert(std::pair<int, std::pair<int, T> >(i, std::make_pair(j, -1 * (itIK->second.second * itKJ->second.second))));
+								numElements += 3;
+								std::cout << "adding new pair" << std::endl;
+							}
+							else 
+							{
+								itIJ->second.second -= -1 * (itIK->second.second * itKJ->second.second);
+								std::cout << "Rank: " << rank << "modifying ("<< i << "," << j << ")  to " << itIJ->second.second << std::endl;
+							}
+						}
 					}
 				}
-			}		
+				//}
+			}
+			
 		}
+		asVec = localCopy.toVector();
+		if (startIdx < 0)
+		{
+			startIdx = 0;
+			numElements = 1;
+		}
+		std::cout << "Rank: " << rank << " numElements: " << numElements << " startIdx: " << startIdx << std::endl;
+		MPI_Bcast(&asVec[startIdx], numElements, MPI_DOUBLE, rank, MPI_COMM_WORLD);
+		if (rank == 0 && k == n - 1)
+		{
+			//std::cout << "HELLO: a\n" << a << std::endl;
+			a = SparseMatrix<T>(asVec);
+		}
+		
 	}
-	*/
+	
 }
