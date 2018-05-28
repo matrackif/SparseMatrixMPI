@@ -708,7 +708,7 @@ void parallelILU(int rank, int size, SparseMatrix<T> & a)
 							else 
 							{
 								itIJ->second.second -= -1 * (itIK->second.second * itKJ->second.second);
-								std::cout << "Rank: " << rank << "modifying ("<< i << "," << j << ")  to " << itIJ->second.second << std::endl;
+								//std::cout << "Rank: " << rank << "modifying ("<< i << "," << j << ")  to " << itIJ->second.second << std::endl;
 							}
 						}
 					}
@@ -720,10 +720,10 @@ void parallelILU(int rank, int size, SparseMatrix<T> & a)
 		asVec = localCopy.toVector();
 		if (startIdx < 0)
 		{
+			//std::cout << "Rank: " << rank << " iter k: " << k << " startIdx < 0" << "startRow: " << startRow << " numElements: " << numElements << std::endl;
 			startIdx = 0;
 			numElements = 1;
 		}
-		std::cout << "Rank: " << rank << " numElements: " << numElements << " startIdx: " << startIdx << std::endl;
 		MPI_Bcast(&asVec[startIdx], numElements, MPI_DOUBLE, rank, MPI_COMM_WORLD);
 		if (rank == 0 && k == n - 1)
 		{
@@ -733,4 +733,51 @@ void parallelILU(int rank, int size, SparseMatrix<T> & a)
 		
 	}
 	
+}
+
+template <class T>
+void ILU(SparseMatrix<T> & a)
+{
+	int n = a.getRowCount();
+	for (int k = 0; k < n; k++)
+	{
+
+		//if (startIdx > 0 && numElements > 0)
+		for (int i = k + 1; i < n; i++)
+		{
+			typename std::multimap<int, std::pair<int, T> >::iterator itKK = a.getIter(k, k);
+			//if (itKK != a.data.end())
+			//{
+			typename std::multimap<int, std::pair<int, T> >::iterator itIK = a.getIter(i, k);
+			if (itIK != a.data.end())
+			{
+				itIK->second.second /= itKK->second.second;
+				for (int j = k + 1; j < n; j++)
+				{
+					typename std::multimap<int, std::pair<int, T> >::iterator itKJ = a.getIter(k, j);
+					if (itKJ != a.data.end())
+					{
+						typename std::multimap<int, std::pair<int, T> >::iterator itIJ = a.getIter(i, j);
+						if (itIJ == a.data.end())
+						{
+							// insertValue checks again
+							T val = -1 * itIK->second.second * itKJ->second.second;
+							a.data.insert(std::pair<int, std::pair<int, T> >(i, std::make_pair(j, val)));
+							std::cout << "adding new pair ("<< i << "," << j << ") of " << val << std::endl;
+						}
+						else 
+						{
+							itIJ->second.second -= -1 * (itIK->second.second * itKJ->second.second);
+							std::cout  << "modifying ("<< i << "," << j << ")  to " << itIJ->second.second << std::endl;
+						}
+					}
+				}
+			}
+				//}
+		}
+			
+		//}
+		
+	}
+
 }

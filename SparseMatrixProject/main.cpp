@@ -14,13 +14,21 @@ int main(int argc, char **argv)
 	const int MAX = 3;
 	const int MIN = 0;
 	int rank, size;
+	std::string file;
+	
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	SparseMatrix<double> testA, testX, testB, matrixFromFile;
 	SparseMatrix<double> lowerTriangSparse, lowerTriangSparseTransposed, testPosDef;
 	if (rank == 0)
 	{
-		lowerTriangSparse = SparseMatrix<double>(7, 7);
+		if(argc == 2)
+		{
+			file = std::string(argv[1]);
+			matrixFromFile = SparseMatrix<double>(file);
+			std::cout << "Read matrix from file: " << file << "\n" << matrixFromFile << std::endl;
+		}
+		lowerTriangSparse = SparseMatrix<double>(3, 3);
 		lowerTriangSparse.fillRandomlyLowerTriangular(1, 3, 1);
 		lowerTriangSparseTransposed = transpose(lowerTriangSparse);
 		testPosDef = lowerTriangSparse.multiply(lowerTriangSparseTransposed);
@@ -60,8 +68,8 @@ int main(int argc, char **argv)
 	conjugateGradient(rank, size, testA, testB, testX);
 	
 	//incompleteCholeskyDecomp(testPosDef);
-	parallelILU(rank, size, testPosDef);
-	
+	ILU(testPosDef);
+	std::cout << "testPosDef after ILU:\n" << testPosDef << std::endl;
 	if (rank == 0)
 	{
 		/*
